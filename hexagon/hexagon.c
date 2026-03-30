@@ -27,19 +27,6 @@ int hex_y = 20;
 int background_changed = 1;
 int values_changed = 1;
 
-char foo[10][20] = {
-			 {  X,X,O,X,_,X,_,O,O,_,X,_,X,_,O,O,_,O,O,X},
-			{  O,X,_,_,O,_,_,O,O,O,O,O,O,X,X,X,_,O,X,_},
-		   {_,  _,O,X,_,_,O,O,O,_,O,_,X,X,X,O,X,X,O,X},
-		  {_,  O,O,O,O,_,O,X,_,O,X,X,X,O,_,X,X,O,_,_},
-		 {O,X,  O,_,_,O,X,_,X,X,X,O,O,_,X,_,O,O,_,_},
-		{_,O,  _,X,X,_,_,_,_,X,O,O,O,_,X,_,_,_,O,O},
-	   {O,O,O,  O,O,O,O,O,_,X,O,O,X,_,_,_,X,_,_,_},
-	  {O,O,_,  X,X,O,X,O,X,X,_,O,O,_,X,O,X,O,_,O},
-	 {O,O,X,_,  _,X,_,O,O,O,X,O,X,_,_,O,_,O,O,O},
-	{O,_,_,O,  _,O,X,X,_,_,_,_,_,_,O,X,_,_,_,O}
-};
-
 void cleanup(GameState* state) {
 	HexagonList *curr = state->list;
 	while (curr != NULL) {
@@ -74,7 +61,6 @@ int player_out_of_bounds(GameState *state) {
 void reset_player(GameState *state) {
 	state->curr = state->top_left;
 }
-
 
 int read_key(char* buf, int i) {
 	switch (buf[i]) {
@@ -134,10 +120,7 @@ void push_to(HexagonList **head, Hexagon *hex) {
     *head = new_node;
 }
 
-Hexagon* generate_hex(GameState *state, Hexagon *origin, int direction) {
-	int x, y;
-	load_coordinates(origin, direction, &x, &y);
-
+Hexagon* ensure_hexagon(GameState *state, int x, int y) {
 	Hexagon *hex = get_hexagon(state, x, y);
 	if (hex != NULL) {
 		return hex;
@@ -155,8 +138,16 @@ Hexagon* generate_hex(GameState *state, Hexagon *origin, int direction) {
 		.left 	= NULL,
 		.right 	= NULL
 	};
-
+	
 	push_to(&state->list, hex);
+	return hex;
+}
+
+Hexagon* generate_hex(GameState *state, Hexagon *origin, int direction) {
+	int x, y;
+	load_coordinates(origin, direction, &x, &y);
+	Hexagon *hex = ensure_hexagon(state, x, y);
+
 	int directions[] = {KEY_UP_L, KEY_UP_R, KEY_DOWN_L, KEY_DOWN_R, KEY_LEFT, KEY_RIGHT};
 
 	// link generated hexagon with hexagons in every direction (if exists)
@@ -190,6 +181,9 @@ void update(GameState* state) {
 		return;
 	}
 	else if(state->key == KEY_PLACE) {
+		if(state->curr->value != _){
+			return;
+		}
 		state->curr->value = state->player;
 		state->moves_played++;
 		if(state->moves_played >= 2) {
@@ -225,58 +219,16 @@ void update(GameState* state) {
 	state->key = KEY_DEFAULT;
 }
 
-void load_level(GameState* state) {
-	Hexagon* stateArr[hex_x][hex_y];
 
+void load_level(GameState* state) {
 	state->list 		= NULL;
 	state->xHexList 	= NULL;
 	state->oHexList 	= NULL;
+	int lattice_center_x = (terminal_x/2-1)/2;
+	int lattice_center_y = (terminal_y / 2 + 2 * lattice_center_x - 2) / 4;
 
-	// set up all the hexagons with appropriate values/positions
-	for(int i = 0; i < hex_x; i++){
-		for (int j = 0; j < hex_y; j++) {
-			Hexagon *temp = malloc(sizeof(Hexagon));
-			temp->value = foo[i][j];
-			temp->x_pos = i;
-			temp->y_pos = j;
-			stateArr[i][j] = temp;
-		}
-	}
-
-	// loop thru all hexagons in arr and attach appropriately
-	for (int i = 0; i < hex_x; i++) {
-		for (int j = 0; j < hex_y; j++) {
-			Hexagon *h = stateArr[i][j];
-
-			h->left  = (j > 0)			?	stateArr[i][j - 1]	: NULL;
-			h->right = (j < hex_y - 1)	?	stateArr[i][j + 1]	: NULL;
-
-			h->upL   = (i > 0 && j > 0)	?	stateArr[i - 1][j - 1]	: NULL;
-			h->upR   = (i > 0)			?	stateArr[i - 1][j]		: NULL;
-
-			h->downL = (i < hex_x - 1)					?	stateArr[i + 1][j]		: NULL;
-			h->downR = (i < hex_x - 1 && j < hex_y - 1) ?	stateArr[i + 1][j + 1]	: NULL;
-		}
-	}
-
-	 for (int i = 0; i < hex_x; i++) {
-        for (int j = 0; j < hex_y; j++) {
-            Hexagon *temp = stateArr[i][j];
-            
-            // Add to master list
-            push_to(&state->list, temp);
-            
-            // Add to specific color lists
-            if (temp->value == X) {
-                push_to(&state->xHexList, temp);
-            } else if (temp->value == O) {
-                push_to(&state->oHexList, temp);
-            }
-        }
-    }
-
-	state->top_left = stateArr[0][0];
-	state->curr = stateArr[hex_x/2][hex_y/2];
+	state->top_left = ensure_hexagon(state, 0, 0);
+	state->curr = ensure_hexagon(state, lattice_center_x, lattice_center_y);
 	state->old = state->curr;
 
 	render(state);
