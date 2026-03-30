@@ -2,73 +2,55 @@
 #include "common.h"
 #include "hex_logic.h"
 
+const char tiling [4][4] = {
+	{".+'+"},
+	{"|   "},
+	{"'+.+"},
+	{"  | "}
+};
+
 void render_background() {
 	CURSOR_TO(0,0);
 	SET_LATTICE_COLOR;
-	for(int row = 0; row < lattice_x; row++) {
-		if((row % 2) == 0) {
-			// print top border
-			for(int col = 0; col < lattice_y; col++) {
-				printf(".+'+");
-			}
-			printf(".\n");
-			// print internal
-			for(int col = (row/2); col < (lattice_y+row/2); col++) {
-				printf("|   ");
-			}
-			printf("|\n");
-		} else {
-			// print top border
-			for(int col = 0; col < lattice_y; col++) {
-				printf("'+.+");
-			}
-			printf("'\n");
-			// print internal
-			for(int col = (row-1)/2; col < (lattice_y+(row-1)/2); col++) {
-				printf("  | ");
-			}
-			printf(" \n");
+
+	char row[terminal_y+1];
+	row[terminal_y] = '\0';
+	// four row types: top border, middle, bottom border, middle shifted
+	int row_type = 0;
+
+	for(int i = 0; i < terminal_x; i++){
+		row_type = i%4;
+		for(int j = 0; j < terminal_y; j++) {
+			row[j] = tiling[row_type][j%4];
 		}
-	}
-	for(int col = 0; col < lattice_y; col++) {
-		if (lattice_x % 2 == 0){
-			printf(".+'+");
-		} else {
-			printf("'+.+");
+		printf("%s", row);
+		if (i != terminal_x - 1) {
+			printf("\n");
 		}
-	}
-	if (lattice_x % 2 == 0) {
-		printf(".\n");
-	} else {
-		printf("'\n");
-	}
+	}		
 }
 
 int renderable(GameState *state, struct Hexagon *hex) {
 	int rel_x = hex->x_pos - state->top_left->x_pos;
     int rel_y = hex->y_pos - state->top_left->y_pos;
 
-	// top/bottom border
-	if (rel_x < 0 || rel_x >= lattice_x) {
-		return 0;
-	}
+	int render_x = 2*rel_x + 1;
+    int render_y = 4*rel_y - 2*rel_x + 2;
 
-	// left/right border
-	if(rel_y*2 - rel_x + 1< 0) {
-		return 0;
-	}
-	if (2*rel_y - rel_x + 1 - 2*lattice_y  - (rel_x % 2) >= 0 ) {
-		return 0;
-	}
+	if (render_x < 0 || render_x > terminal_x-1) return 0;
+	if (render_y < 0 || render_y > terminal_y) return 0;
+
 
 	return 1;
 }
 
 void inject_value(struct Hexagon* hex) {
 	if (hex->value == X) {
-		printf("%s%c", X_COLOR, X);
+		X_COLOR;
+		printf("%c", X);
 	} else if (hex->value == O) {
-		printf("%s%c", O_COLOR, O);
+		O_COLOR;
+		printf("%c",O);
 	}
 }
 
@@ -101,30 +83,19 @@ void render_hex(GameState *state, struct Hexagon *curr) {
 	int cursor_center_x = rel_x * 2 + 1;
 	int cursor_center_y = rel_y*4+2 - rel_x*2;
 
-	// !left edge?
-	if(!(rel_y*2 + 1 == rel_x)) {
-		CURSOR_TO(cursor_center_x-1, cursor_center_y-2);
-		printf(".+");
-		CURSOR_TO(cursor_center_x, cursor_center_y-2);
-		printf("| ");
-		CURSOR_TO(cursor_center_x+1, cursor_center_y-2);
-		printf("'+");
-	}
-	// center
-	CURSOR_TO(cursor_center_x-1, cursor_center_y);
-	printf("'");
-	CURSOR_TO(cursor_center_x+1, cursor_center_y);
-	printf(".");
-
-	//!right edge?
-
-	if(!((rel_x % 2) == 1 && rel_x == ((rel_y-lattice_y-1)*2-1))) {
-		CURSOR_TO(cursor_center_x-1, cursor_center_y+1);
-		printf("+.");
-		CURSOR_TO(cursor_center_x, cursor_center_y+1);
-		printf(" |");
-		CURSOR_TO(cursor_center_x+1, cursor_center_y+1);
-		printf("+'");
+	for(int dx = -1; dx <= 1; dx++) {
+		for (int dy = -2; dy <= 2; dy++) {
+			if (cursor_center_x + dx < 0 || cursor_center_x + dx > terminal_x-1 ||
+				cursor_center_y + dy < 0 || cursor_center_y + dy > terminal_y){
+				continue;
+			}
+			// we don't want to overwrite the shown value of this hexagon
+			if(dx == dy && dy == 0) {
+				continue;
+			}
+			CURSOR_TO(cursor_center_x + dx, cursor_center_y + dy);
+			printf("%c", tiling[dx+1][(dy+2)%4]);
+		}
 	}
 }
 

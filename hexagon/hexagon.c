@@ -15,10 +15,9 @@
 #define LEVEL ("level_test.txt")
 
 int exit_loop = 0;
+int terminal_x = DEFAULT_TERMINAL_X;
+int terminal_y = DEFAULT_TERMINAL_Y;
 
-// how much of the lattice is shown on screen
-int lattice_x = 10;
-int lattice_y = 16;
 
 //TODO: DELETE LATER
 // used for loading level
@@ -68,17 +67,26 @@ void cleanup(GameState* state) {
 	state->xHexList = NULL;
 }
 
+int player_out_of_bounds(GameState *state) {
+	return !renderable(state, state->curr);
+}
+
+void reset_player(GameState *state) {
+	state->curr = state->top_left;
+}
+
+
 int read_key(char* buf, int i) {
 	switch (buf[i]) {
-		case UPL: 	return KEY_UP_L;
-		case UPR: 	return KEY_UP_R;
-		case DOWNL: return KEY_DOWN_L;
-		case DOWNR: return KEY_DOWN_R;
-		case LEFT: 	return KEY_LEFT;
-		case RIGHT: return KEY_RIGHT;
-		case SPACE: return KEY_PLACE;
-		case ENTER: return KEY_PLACE;
-		default: 	return KEY_DEFAULT;
+		case UPL: 		return KEY_UP_L;
+		case UPR: 		return KEY_UP_R;
+		case DOWNL: 	return KEY_DOWN_L;
+		case DOWNR: 	return KEY_DOWN_R;
+		case LEFT: 		return KEY_LEFT;
+		case RIGHT: 	return KEY_RIGHT;
+		case SPACE: 	return KEY_PLACE;
+		case ENTER: 	return KEY_PLACE;
+		default: 		return KEY_DEFAULT;
 	}
 	return 0;
 }
@@ -125,7 +133,6 @@ void push_to(HexagonList **head, Hexagon *h) {
     new_node->next = *head;
     *head = new_node;
 }
-
 
 Hexagon* generate_hex(GameState *state, Hexagon *origin, int direction) {
 	int x, y;
@@ -178,26 +185,33 @@ void update(GameState* state) {
 	if(state->key == KEY_DEFAULT) {
 		return;
 	}
-
-	if(state->key == KEY_PLACE) {
+	else if(state->key == KEY_PLACE) {
 		state->curr->value = state->player;
 		state->player = (state->player == X) ? O : X;
 		values_changed = 1;
+		state->key = KEY_DEFAULT;
+		return;
 	}
-	else if(state->key == KEY_REMOVE) {
-		state->curr->value = _;
-		values_changed = 1;
-	} else {
-		Hexagon* new = get_neighbor(state->curr, state->key);
-		if (new == NULL) {
-			new = generate_hex(state, state->curr, state->key);	
+
+
+	Hexagon* new = get_neighbor(state->curr, state->key);
+	if (new == NULL) {
+		new = generate_hex(state, state->curr, state->key);	
+	}
+	
+	if(!renderable(state, new)) {
+		Hexagon* new_top_left = get_neighbor(state->top_left, state->key);
+		if (new_top_left == NULL) {
+			new_top_left = generate_hex(state, state->top_left, state->key);
 		}
-		state->curr = new;
+		state->top_left = new_top_left;
+		values_changed = 1;
+		background_changed = 1;
 	}
+
+	state->curr = new;
 	state->key = KEY_DEFAULT;
 }
-
-
 
 void load_level(GameState* state) {
 
@@ -260,15 +274,15 @@ void load_level(GameState* state) {
 
 int main() {
 	configure_terminal();
-
+	configure_parameters();
 	signal(SIGINT, signal_handler);
 
 	struct timespec start = {};
 	struct timespec end = {};
 	struct timespec sleep = {};
-	struct winsize window;
 
-	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) == -1)
+	// char level[] = "./level_test.txt";
+	// char blank[] = "./level_blank.txt";
 
 	CLEAR_SCREEN;
 	GameState state = {
@@ -276,10 +290,7 @@ int main() {
 		.player = X
 	};
 
-
-
 	load_level(&state);
-
 
 	while(!exit_loop) {
 		clock_gettime(CLOCK_MONOTONIC, &start);
@@ -287,6 +298,17 @@ int main() {
 		read_input(&state);
 		update(&state);
 		render(&state);
+
+		if (terminal_resized()) {
+
+			configure_parameters();
+			CLEAR_SCREEN;
+			background_changed = 1;
+			values_changed = 1;
+			if(player_out_of_bounds(&state)){
+				reset_player(&state);
+			}
+		}
 
 		clock_gettime(CLOCK_MONOTONIC, &end);
 

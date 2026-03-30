@@ -2,16 +2,46 @@
 #include <termios.h>
 #include <unistd.h>
 #include <signal.h>
-#include 
+#include <sys/ioctl.h>
 #include "common.h"
 #include "terminal.h"
+
 
 static struct termios old_termios, new_termios;
 static struct winsize old_winsize, new_winsize;
 
-void configure_grid_dimensions()
+void configure_parameters() {
+
+	//upon failure, default to old window size
+	if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &new_winsize) == -1){
+		terminal_x = DEFAULT_TERMINAL_X;
+		terminal_y = DEFAULT_TERMINAL_Y;
+		return;
+	}
+
+	terminal_x = new_winsize.ws_row;
+	terminal_y = new_winsize.ws_col;
+	
+	terminal_x = (terminal_x < 1) ? 1 : terminal_x;
+	terminal_y = (terminal_y < 1) ? 1 : terminal_y;
+	old_winsize = new_winsize;
+}
+
+int terminal_resized() {
+	
+	if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &new_winsize) == -1){
+		return 0;
+	}
+
+	if (old_winsize.ws_col != new_winsize.ws_col ||
+		old_winsize.ws_row != new_winsize.ws_row) {
+		return 1;
+	}
+	return 0;
+}
 
 void configure_terminal() {
+	DISABLE_WRAPPING;
 	tcgetattr(STDIN_FILENO, &old_termios);
 	new_termios = old_termios;
 
@@ -28,6 +58,7 @@ void configure_terminal() {
 }
 
 void reset_terminal() {
+	ENABLE_WRAPPING;
 	RESET_COLOR;
 	SHOW_CURSOR;
 	CLEAR_SCREEN;

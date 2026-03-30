@@ -9,13 +9,15 @@
 #define SHOW_CURSOR (printf("\e[?25h"))
 #define CURSOR_TO(x, y) (printf("\e[%d;%dH", (x) + 1, (y) + 1))
 #define RESET_COLOR (printf("\e[m"))
+#define DISABLE_WRAPPING (printf("\e[?7l"))
+#define ENABLE_WRAPPING (printf("\e[?7h"))
 
 #define SET_LATTICE_COLOR (printf("\033[38;5;244m"))
 #define SET_CURR_COLOR (printf("\033[38;5;254m"))
 
-#define BOLD ("\e[1m")
-#define X_COLOR ("\x1B[0;31m")
-#define O_COLOR ("\x1B[0;34m")
+#define BOLD (printf("\e[1m"))
+#define X_COLOR (printf("\x1B[0;31m"))
+#define O_COLOR (printf("\x1B[0;34m"))
 
 #define UPL ('q')
 #define UPR ('e')
@@ -40,8 +42,8 @@
 #define O ('O')
 #define _ (' ')
 
-extern int lattice_x;
-extern int lattice_y;
+extern int terminal_x;
+extern int terminal_y;
 extern int exit_loop;
 extern int background_changed;
 extern int values_changed;
