@@ -127,9 +127,9 @@ void render(GameState *state) {
 	fflush(stdout);
 }
 
-void push_to(HexagonList **head, Hexagon *h) {
+void push_to(HexagonList **head, Hexagon *hex) {
     HexagonList *new_node = malloc(sizeof(HexagonList));
-    new_node->hex = h;
+    new_node->hex = hex;
     new_node->next = *head;
     *head = new_node;
 }
@@ -180,6 +180,10 @@ Hexagon* generate_hex(GameState *state, Hexagon *origin, int direction) {
 	return hex;
 }
 
+void save_winner(GameState *state) {
+	state->winner = state->curr->value;
+}
+
 void update(GameState* state) {
 	state->old = state->curr;
 	if(state->key == KEY_DEFAULT) {
@@ -187,7 +191,15 @@ void update(GameState* state) {
 	}
 	else if(state->key == KEY_PLACE) {
 		state->curr->value = state->player;
-		state->player = (state->player == X) ? O : X;
+		state->moves_played++;
+		if(state->moves_played >= 2) {
+			state->moves_played = 0;
+			state->player = (state->player == X) ? O : X;
+		}
+		if (detect_player_won(state->curr)){
+			save_winner(state);
+			exit_loop = 1;
+		}
 		values_changed = 1;
 		state->key = KEY_DEFAULT;
 		return;
@@ -214,7 +226,6 @@ void update(GameState* state) {
 }
 
 void load_level(GameState* state) {
-
 	Hexagon* stateArr[hex_x][hex_y];
 
 	state->list 		= NULL;
@@ -281,13 +292,11 @@ int main() {
 	struct timespec end = {};
 	struct timespec sleep = {};
 
-	// char level[] = "./level_test.txt";
-	// char blank[] = "./level_blank.txt";
-
 	CLEAR_SCREEN;
 	GameState state = {
-		.key = 0,
-		.player = X
+		.key = KEY_DEFAULT,
+		.player = X,
+		.moves_played = 1
 	};
 
 	load_level(&state);
@@ -300,7 +309,6 @@ int main() {
 		render(&state);
 
 		if (terminal_resized()) {
-
 			configure_parameters();
 			CLEAR_SCREEN;
 			background_changed = 1;

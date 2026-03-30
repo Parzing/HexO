@@ -161,3 +161,30 @@ Hexagon* get_hexagon(GameState *state, int x, int y) {
 	}
 	return NULL;
 }
+
+int count_dir(struct Hexagon *hex, int direction) {
+	Hexagon *curr = hex;
+	int count;
+	for(count = 0; count < 6; count++){
+		curr = get_neighbor(curr, direction);
+		if (curr == NULL || curr->value != hex->value){
+			return count;
+		}
+	}
+	return count;
+}
+
+int detect_player_won(struct Hexagon *hex) {
+	if (count_dir(hex, KEY_UP_L) + count_dir(hex, KEY_DOWN_R) + 1 >= 6) {
+		return 1;
+	}
+
+	if (count_dir(hex, KEY_UP_R) + count_dir(hex, KEY_DOWN_L) + 1 >= 6) {
+		return 1;
+	}
+
+		if (count_dir(hex, KEY_LEFT) + count_dir(hex, KEY_RIGHT) + 1 >= 6) {
+		return 1;
+	}
+	return 0;
+}

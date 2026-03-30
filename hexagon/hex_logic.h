@@ -12,5 +12,6 @@ void render_center(GameState *state, struct Hexagon *curr);
 Hexagon* get_neighbor(struct Hexagon* hex, int direction);
 void load_coordinates(struct Hexagon* hex, int direction, int *x, int *y);
 Hexagon* get_hexagon(GameState *state, int x, int y);
+int detect_player_won(struct Hexagon *hex);
 
 #endif

@@ -70,6 +70,8 @@ typedef struct HexagonList {
 // y is bottom left to top right
 typedef struct {
 	int key;
+	int moves_played;
+	char winner;
 	char player;
 	struct Hexagon *curr;
 	struct Hexagon *old;
