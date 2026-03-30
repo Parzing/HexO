@@ -5,7 +5,6 @@
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <signal.h>
-#include <string.h>
 
 #include "hex_logic.h"
 #include "common.h"
@@ -18,48 +17,35 @@ int exit_loop = 0;
 int terminal_x = DEFAULT_TERMINAL_X;
 int terminal_y = DEFAULT_TERMINAL_Y;
 
-
-//TODO: DELETE LATER
-// used for loading level
-int hex_x = 10;
-int hex_y = 20;
-
 int background_changed = 1;
 int values_changed = 1;
 
 void cleanup(GameState* state) {
-	HexagonList *curr = state->list;
+	HexagonList *curr = state->oHexList;
 	while (curr != NULL) {
 		HexagonList *next = curr->next;
 		free(curr->hex);
 		free(curr);
 		curr = next;
 	}
+	state->oHexList 	= NULL;
 
 	curr = state->xHexList;
 	while (curr != NULL) {
 		HexagonList *next = curr->next;
+		free(curr->hex);
 		free(curr);
 		curr = next;
 	}
-	curr = state->oHexList;
-	while (curr != NULL) {
-		HexagonList *next = curr->next;
-		free(curr);
-		curr = next;
-	}
-
-	state->list 	= NULL;
-	state->oHexList = NULL;
-	state->xHexList = NULL;
+	state->oHexList 	= NULL;
 }
 
 int player_out_of_bounds(GameState *state) {
-	return !renderable(state, state->curr);
+	return !renderable(state, state->curr_pos);
 }
 
 void reset_player(GameState *state) {
-	state->curr = state->top_left;
+	state->curr_pos = state->anchor;
 }
 
 int read_key(char* buf, int i) {
@@ -95,20 +81,22 @@ void read_input(GameState* state) {
 void render(GameState *state) {
 	if (background_changed){
 		render_background();
+		// render current hexagon
 		SET_CURR_COLOR;
-		render_hex(state, state->curr);
-		render_center(state, state->curr);
+		render_hex(state, state->curr_pos);
+		render_center(state, get_hexagon(state, state->curr_pos));
 		background_changed = 0;
 	}
 	if (values_changed){
 		fill_hexagons(state);
 		values_changed = 0;
 	}
-	if (state->curr != state->old){
+	if (state->curr_pos->x != state->old_pos->x || 
+		state->curr_pos->y != state->old_pos->y){
 		SET_LATTICE_COLOR;
-		render_hex(state, state->old);
+		render_hex(state, state->old_pos);
 		SET_CURR_COLOR;
-		render_hex(state, state->curr);
+		render_hex(state, state->curr_pos);
 	}
 	fflush(stdout);
 }
@@ -120,117 +108,96 @@ void push_to(HexagonList **head, Hexagon *hex) {
     *head = new_node;
 }
 
-Hexagon* ensure_hexagon(GameState *state, int x, int y) {
-	Hexagon *hex = get_hexagon(state, x, y);
+Hexagon* ensure_hexagon(GameState *state, Position* pos) {
+	Hexagon *hex = get_hexagon(state, pos);
 	if (hex != NULL) {
 		return hex;
 	}
 
 	hex = malloc(sizeof(Hexagon));
-	*hex = (Hexagon) {
-		.value = _,
-		.x_pos = x,
-		.y_pos = y,
-		.upL 	= NULL,
-		.upR 	= NULL,
-		.downL 	= NULL,
-		.downR 	= NULL,
-		.left 	= NULL,
-		.right 	= NULL
-	};
-	
-	push_to(&state->list, hex);
+	hex->value = _;
+	hex->pos = malloc(sizeof(Position));
+	*(hex->pos) = *pos;
+
+
 	return hex;
 }
 
 Hexagon* generate_hex(GameState *state, Hexagon *origin, int direction) {
-	int x, y;
-	load_coordinates(origin, direction, &x, &y);
-	Hexagon *hex = ensure_hexagon(state, x, y);
-
-	int directions[] = {KEY_UP_L, KEY_UP_R, KEY_DOWN_L, KEY_DOWN_R, KEY_LEFT, KEY_RIGHT};
-
-	// link generated hexagon with hexagons in every direction (if exists)
-	Hexagon *temp;
-
-	for(int i = 0; i < 6; i++) {
-		load_coordinates(hex, directions[i], &x, &y);
-		temp = get_hexagon(state, x, y);
-		if(temp == NULL) {
-			continue;
-		}
-		switch (directions[i]){
-			case KEY_UP_L:		hex->upL	= temp; temp->downR = hex; break;
-			case KEY_UP_R:		hex->upR	= temp; temp->downL = hex; break;
-			case KEY_DOWN_L:	hex->downL	= temp; temp->upR	= hex; break;
-			case KEY_DOWN_R:	hex->downR	= temp; temp->upL	= hex; break;
-			case KEY_LEFT:		hex->left	= temp; temp->right	= hex; break;
-			case KEY_RIGHT:		hex->right	= temp; temp->left	= hex; break;
-		}
-	}
+	Position pos;
+	load_coordinates(origin->pos, direction, &pos);
+	Hexagon *hex = ensure_hexagon(state, &pos);
 	return hex;
 }
 
 void save_winner(GameState *state) {
-	state->winner = state->curr->value;
+	state->winner = state->player;
 }
 
 void update(GameState* state) {
-	state->old = state->curr;
+	*state->old_pos = *state->curr_pos;
+
 	if(state->key == KEY_DEFAULT) {
 		return;
 	}
-	else if(state->key == KEY_PLACE) {
-		if(state->curr->value != _){
+	if(state->key == KEY_PLACE) {
+		Hexagon* hex = ensure_hexagon(state, state->curr_pos);
+		if(hex->value != _){
 			return;
 		}
-		state->curr->value = state->player;
+		hex->value = state->player;
+		if (hex->value == X) {
+			push_to(&state->xHexList, hex);
+		} else {
+			push_to(&state->oHexList, hex);
+		}
+
+		if (detect_player_won(state, state->curr_pos)){
+			save_winner(state);
+			exit_loop = 1;
+		}
+
 		state->moves_played++;
 		if(state->moves_played >= 2) {
 			state->moves_played = 0;
 			state->player = (state->player == X) ? O : X;
 		}
-		if (detect_player_won(state->curr)){
-			save_winner(state);
-			exit_loop = 1;
-		}
+		
 		values_changed = 1;
 		state->key = KEY_DEFAULT;
 		return;
 	}
 
-
-	Hexagon* new = get_neighbor(state->curr, state->key);
-	if (new == NULL) {
-		new = generate_hex(state, state->curr, state->key);	
-	}
-	
-	if(!renderable(state, new)) {
-		Hexagon* new_top_left = get_neighbor(state->top_left, state->key);
-		if (new_top_left == NULL) {
-			new_top_left = generate_hex(state, state->top_left, state->key);
-		}
-		state->top_left = new_top_left;
+	// load coordinates into current position based on old hexagon & direction
+	load_coordinates(state->old_pos, state->key, state->curr_pos);
+		
+	if(!renderable(state, state->curr_pos)) {
+		load_coordinates(state->anchor, state->key, state->anchor);
 		values_changed = 1;
 		background_changed = 1;
 	}
-
-	state->curr = new;
 	state->key = KEY_DEFAULT;
 }
 
 
 void load_level(GameState* state) {
-	state->list 		= NULL;
-	state->xHexList 	= NULL;
-	state->oHexList 	= NULL;
+	state->xHexList	= NULL;
+	state->oHexList = NULL;
 	int lattice_center_x = (terminal_x/2-1)/2;
 	int lattice_center_y = (terminal_y / 2 + 2 * lattice_center_x - 2) / 4;
 
-	state->top_left = ensure_hexagon(state, 0, 0);
-	state->curr = ensure_hexagon(state, lattice_center_x, lattice_center_y);
-	state->old = state->curr;
-
+	state->anchor->x = 0;
+	state->anchor->y = 0;
+	
+	*state->old_pos = (Position) {
+		.x = lattice_center_x,
+		.y = lattice_center_y
+	};
+	
+	*state->curr_pos = (Position) {
+		.x = lattice_center_x,
+		.y = lattice_center_y
+	};
 	render(state);
 }
 
@@ -250,6 +217,10 @@ int main() {
 		.player = X,
 		.moves_played = 1
 	};
+
+	state.curr_pos = malloc(sizeof(Position));
+	state.old_pos = malloc(sizeof(Position));
+	state.anchor = malloc(sizeof(Position));
 
 	load_level(&state);
 

@@ -49,16 +49,14 @@ extern int background_changed;
 extern int values_changed;
 
 
+typedef struct Position{
+	int x;
+	int y;
+} Position;
+
 typedef struct Hexagon{
 	char value;
-	int x_pos;
-	int y_pos;
-	struct Hexagon *upL;
-	struct Hexagon *upR;
-	struct Hexagon *downL;
-	struct Hexagon *downR;
-	struct Hexagon *left;
-	struct Hexagon *right;
+	struct Position* pos;
 } Hexagon;
 
 typedef struct HexagonList {
@@ -73,10 +71,11 @@ typedef struct {
 	int moves_played;
 	char winner;
 	char player;
-	struct Hexagon *curr;
-	struct Hexagon *old;
-	struct Hexagon *top_left;
-	struct HexagonList *list;
+
+	struct Position *curr_pos;
+	struct Position *old_pos;
+	struct Position *anchor;
+
 	struct HexagonList *xHexList;
 	struct HexagonList *oHexList;
 } GameState;

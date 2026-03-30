@@ -4,14 +4,13 @@
 #include "common.h"
 
 void render_background();
-int renderable(GameState *state, struct Hexagon *hex);
-void inject_value(struct Hexagon* hex);
+int renderable(GameState *state, Position* pos);
+void inject_value(Hexagon* hex);
 void fill_hexagons(GameState *state);
-void render_hex(GameState *state, struct Hexagon *curr);
-void render_center(GameState *state, struct Hexagon *curr);
-Hexagon* get_neighbor(struct Hexagon* hex, int direction);
-void load_coordinates(struct Hexagon* hex, int direction, int *x, int *y);
-Hexagon* get_hexagon(GameState *state, int x, int y);
-int detect_player_won(struct Hexagon *hex);
+void render_hex(GameState *state, Position* pos);
+void render_center(GameState *state, Hexagon *curr);
+void load_coordinates(Position* origin, int direction, Position *pos);
+Hexagon* get_hexagon(GameState *state, Position* pos);
+int detect_player_won(GameState *state, Position *pos);
 
 #endif
