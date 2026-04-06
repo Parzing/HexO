@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "common.h"
+#include "game_const.h"
 #include "terminal.h"
 #include "hex_display.h"
 #include "game_engine.h"

@@ -1,7 +1,7 @@
 #ifndef HEX_CODEX_H
 #define HEX_CODEX_H
 
-#include "client_logic.h"
+#include "game_const.h"
 
 // Returns an encoding of the hexagon. The caller should remember to free() the message.
 char *encode(Hexagon *hex);

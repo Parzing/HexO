@@ -1,5 +1,5 @@
-#ifndef COMMON_H
-#define COMMON_H
+#ifndef GAME_CONS_H
+#define GAME_CONS_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,5 +42,20 @@
 #define X ('X')
 #define O ('O')
 #define _ (' ')
+
+typedef struct Position{
+	int x;
+	int y;
+} Position;
+
+typedef struct Hexagon{
+	char value;
+	struct Position* pos;
+} Hexagon;
+
+typedef struct HexagonList {
+	struct Hexagon *hex;
+	struct HexagonList *next;
+} HexagonList;
 
 #endif

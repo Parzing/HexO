@@ -2,7 +2,7 @@
 #define HEX_LOGIC_H
 
 #include "client_logic.h"
-#include "common.h"
+#include "game_const.h"
 
 void render(ClientState *state);
 

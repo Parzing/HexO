@@ -3,20 +3,7 @@
 
 #define DEFAULT_PORT 61674
 
-typedef struct Position{
-	int x;
-	int y;
-} Position;
-
-typedef struct Hexagon{
-	char value;
-	struct Position* pos;
-} Hexagon;
-
-typedef struct HexagonList {
-	struct Hexagon *hex;
-	struct HexagonList *next;
-} HexagonList;
+#include "game_const.h"
 
 // pending_move is a little awkward. I feel as though the AppContext should 
 // have some sort of inbound_packet flag, but then how do you access it from 

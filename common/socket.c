@@ -8,7 +8,6 @@
 
 #include "socket.h"
 
-
 /*
  * Initialize a server address associated with the given port.
  */

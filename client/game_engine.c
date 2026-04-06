@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
 #include "game_engine.h"
-#include "common.h"
+#include "game_const.h"
 #include "terminal.h"
 #include "error.h"
 

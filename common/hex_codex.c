@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "client_logic.h"
+#include "game_const.h"
 
 #define FORMAT ("%c,%d,%d")
 

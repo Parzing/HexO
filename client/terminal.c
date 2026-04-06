@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sys/ioctl.h>
-#include "common.h"
+#include "game_const.h"
 #include "terminal.h"
 
 
