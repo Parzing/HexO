@@ -9,6 +9,7 @@
 #include "client_logic.h"
 #include "message.h"
 #include "terminal.h"
+#include "error.h"
 
 #ifndef PORT
 	#define PORT 61674
@@ -35,10 +36,6 @@ void limit_frame_rate(struct timespec *start){
 }
 
 int main(int argc, char **argv) {
-    if (argc != 2) {
-        fprintf(stderr, "Usage: client hostname\n");
-        exit(1);
-    }
 
 	AppContext ctx;
 	struct timespec frame_start;
@@ -47,13 +44,16 @@ int main(int argc, char **argv) {
 	if(init_application(&ctx, argc, argv) != 0) {
 		return 1;
 	}
+	write_error("Initialization complete.\n");
+	char buffer[50];
+	snprintf(buffer, sizeof(buffer), "Client is now player %c\n", ctx.game.player);
+	write_error(buffer);
 
 	while (ctx.status == STATUS_PLAYING) {
 		if(interrupt_received) {
 			ctx.status = STATUS_DISCONNECTED;
 			continue;
 		}
-
 
 		clock_gettime(CLOCK_MONOTONIC, &frame_start);
 

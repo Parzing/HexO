@@ -18,9 +18,10 @@ void render_background() {
 
 	char row[terminal_y+1];
 	row[terminal_y] = '\0';
-	// four row types: top border, middle, bottom border, middle shifted
-	int row_type = 0;
 
+
+	int row_type = 0;
+	
 	for(int i = 0; i < terminal_x; i++){
 		row_type = i%4;
 		for(int j = 0; j < terminal_y; j++) {

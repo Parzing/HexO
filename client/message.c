@@ -5,8 +5,8 @@
 #include <string.h>
 #include <unistd.h>
 
-const unsigned char PACKET_START = 254;
-const unsigned char PACKET_END   = 255;
+const unsigned char PACKET_START = 255;
+const unsigned char PACKET_END   = 254;
 const int PACKET_SIZE        	 = 128;
 
 int get_message(int socket, char* message) {

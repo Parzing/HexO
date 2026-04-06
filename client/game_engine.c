@@ -22,6 +22,7 @@ void update_hex_lists(ClientState *state, Hexagon *hex){
 }
 
 void update_cursor(ClientState *state){
+	*(state->old_pos) = *(state->curr_pos);
 	// load coordinates into current position based on old hexagon & direction
 	load_coordinates(state->old_pos, state->key, state->curr_pos);
 		

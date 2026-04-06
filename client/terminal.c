@@ -1,4 +1,3 @@
-
 #include <termios.h>
 #include <unistd.h>
 #include <signal.h>
@@ -71,5 +70,10 @@ void reset_terminal() {
 }
 
 void signal_handler(__attribute__((unused)) int signum) {
+	if (signum == SIGSEGV) {
+		reset_terminal();
+		fprintf(stderr, "Fatal: Segmentation Fault\n");
+		exit(1);
+	}
 	interrupt_received = 1;
 }

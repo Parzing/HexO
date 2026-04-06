@@ -30,7 +30,6 @@ void init_game_state(ClientState *state) {
 	state->oHexList = NULL;
 }
 
-
 int init_application(AppContext *ctx, int argc, char **argv){
 	char *host = (argc > 1) ? argv[1] : "127.0.0.1";
 	ctx->socket = connect_to_server(DEFAULT_PORT, host);
@@ -41,12 +40,22 @@ int init_application(AppContext *ctx, int argc, char **argv){
 	configure_terminal();
 	configure_parameters();
 	signal(SIGINT, signal_handler);
+	signal(SIGSEGV, signal_handler);
 
 	char packet[PACKET_SIZE];
 
-	if (get_message(ctx->socket, packet) == 0) {
-	   	ctx->game.player = packet[0];
+	int player_determined = 0;
+
+	while(!player_determined){
+		if (get_message(ctx->socket, packet) == 0) {
+			write_error("Packet: ");
+			write_error(packet);
+			write_error("\n");
+			ctx->game.player = packet[0];
+			player_determined = 1;
+		}
 	}
+
 
 	init_game_state(&(ctx->game));
 	ctx->status = STATUS_PLAYING;
@@ -87,8 +96,12 @@ void process_user_input(AppContext *ctx){
 			continue;
 		}
 		ctx->game.key = key;
+		char buffer[30];
+		snprintf(buffer, sizeof(buffer), "key: %c", buf[i]);
+		write_error(buffer);
 		break;
 	}
+	
 }
 
 // simply looks at the socket and determines if there's any data to be had. 
@@ -110,9 +123,15 @@ int server_has_packet(AppContext *ctx){
 // just gets the message packet from the socket.
 int fetch_server_packet(AppContext *ctx, char* packet){
 	if(get_message(ctx->socket, packet) != 0) {
+		write_error("Inbound: ");
+		write_error(packet);
+		write_error("\n");
 		ctx->status = STATUS_DISCONNECTED;
 		return 0;
-	}
+	} 
+	write_error("Inbound: ");
+	write_error(packet);
+	write_error("\n");
 	return 1;
 }
 
@@ -131,7 +150,7 @@ void process_server_packet(AppContext *ctx, char* packet){
 	} else if (strcmp(packet, LOSS) == 0) {
 		ctx->status = STATUS_LOSER;
 	} else {
-		write_error("Invalid packet");
+		write_error("Invalid packet\n");
 	}
 
 }
@@ -143,6 +162,7 @@ void update_state(AppContext *ctx) {
 	if(ctx->game.server_hex != NULL) {
 		update_hex_lists(&(ctx->game), ctx->game.server_hex);
 		ctx->game.server_hex = NULL;
+		ctx->game.values_changed = 1;
 	}
 
 	if(ctx->game.key == KEY_DEFAULT) {
@@ -164,13 +184,14 @@ void send_move_request(AppContext *ctx) {
 
 	char *message = encode(&outbound_hex);
 	if (message != NULL) {
+		write_error("Outbound: ");
+		write_error(message);
 		send_message(ctx->socket, message);
 		free(message);
 	}
 
 	ctx->game.pending_move = 0;
 }
-
 
 void render_frame(AppContext *ctx){
 	render(&(ctx->game));
