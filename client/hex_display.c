@@ -148,11 +148,10 @@ void render(ClientState *state) {
 
 void show_winner(ClientState *state, int is_winner) {
 	CLEAR_SCREEN;
-	CURSOR_TO(terminal_x/2, terminal_y/2);
+	CURSOR_TO(terminal_x/2, terminal_y/2-6);
 	if(is_winner) {
 		printf("You win as %c!", state->player);
 	} else {
 		printf("You lose as %c.", state->player);
 	}
-	CURSOR_TO(terminal_x-1, 0);
 }

@@ -64,8 +64,7 @@ void reset_terminal() {
 	ENABLE_WRAPPING;
 	RESET_COLOR;
 	SHOW_CURSOR;
-	CLEAR_SCREEN;
-	CURSOR_TO(0, 0);
+	CURSOR_TO(terminal_x-1, 0);
 	fflush(stdout);
 	tcsetattr(STDIN_FILENO, TCSANOW, &old_termios);
 }

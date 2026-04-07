@@ -63,6 +63,10 @@ void update_new_players(AppContext *ctx){
 		free(buffer);
 		oCurr = oCurr->next;
 	}
+	ctx->inbound_packet = 0;
+	ctx->outbound_packet = 0;
+	memset(ctx->move_packet, 0, PACKET_SIZE);
+
 	ctx->status = SERVER_ACTIVE;
 
 }

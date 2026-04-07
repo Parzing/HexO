@@ -4,7 +4,8 @@ CFLAGS = -Wall -Wextra -std=gnu11 -D_POSIX_C_SOURCE=199309L -D_DEFAULT_SOURCE -g
 LDFLAGS = 
 
 # List of all your .c files
-SRCS = client.c client_logic.c game_engine.c hex_display.c terminal.c error.c ../common/hex_codex.c ../common/message.c ../common/socket.c
+SRCS = client.c client_logic.c game_engine.c hex_display.c terminal.c \
+		../common/hex_codex.c ../common/message.c ../common/socket.c ../common/logs.c
 
 
 # This automatically creates a list of .o files from the .c files

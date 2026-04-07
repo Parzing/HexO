@@ -63,6 +63,17 @@ void nw_manage_connections (AppContext *ctx) {
 	}
 }
 
+void clear_buffer(AppContext *ctx) {
+	char drain_buffer[PACKET_SIZE];
+	for (int i = 0; i < 2; i++) {
+		if (ctx->player_fds[i] != -1) {
+			// clear out buffer
+			while (recv(ctx->player_fds[i], drain_buffer, sizeof(drain_buffer), MSG_DONTWAIT) > 0) {
+			}
+		}
+	}
+}
+
 void nw_wait_for_players(AppContext *ctx){
 	printf("Waiting for players...\n");
 	ctx->inbound_packet = 0;
@@ -136,7 +147,7 @@ void nw_wait_for_players(AppContext *ctx){
 		}
 	}
 
-
+	clear_buffer(ctx);
 }
 
 void broadcast_message(AppContext *ctx, char *message) {
