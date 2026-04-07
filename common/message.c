@@ -1,13 +1,14 @@
-#include "socket.h"
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
+#include "message.h"
+#include "socket.h"
+
 const unsigned char PACKET_START = 255;
 const unsigned char PACKET_END   = 254;
-const int PACKET_SIZE        	 = 128;
 
 int get_message(int socket, char* message) {
 	unsigned char curr_char = '\0';

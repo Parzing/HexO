@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "hex_codex.h"
 #include "game_const.h"
 
 #define FORMAT ("%c,%d,%d")

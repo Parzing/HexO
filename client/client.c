@@ -9,7 +9,7 @@
 #include "client_logic.h"
 #include "message.h"
 #include "terminal.h"
-#include "error.h"
+#include "logs.h"
 
 #ifndef PORT
 	#define PORT 61674
@@ -44,10 +44,11 @@ int main(int argc, char **argv) {
 	if(init_application(&ctx, argc, argv) != 0) {
 		return 1;
 	}
-	write_error("Initialization complete.\n");
+	log_message("Initialization complete.\n");
 	char buffer[50];
 	snprintf(buffer, sizeof(buffer), "Client is now player %c\n", ctx.game.player);
-	write_error(buffer);
+	log_message(buffer);
+	log_message("\n");
 
 	while (ctx.status == STATUS_PLAYING) {
 		if(interrupt_received) {
@@ -75,6 +76,8 @@ int main(int argc, char **argv) {
 
 		limit_frame_rate(&frame_start);
 	}
+
+	display_winner(&ctx);
 
 	shutdown_application(&ctx);
 

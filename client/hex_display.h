@@ -5,5 +5,6 @@
 #include "game_const.h"
 
 void render(ClientState *state);
+void show_winner(ClientState *state, int is_winner);
 
 #endif

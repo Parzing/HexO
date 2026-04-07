@@ -8,7 +8,7 @@
 #include "hex_display.h"
 #include "hex_codex.h"
 #include "message.h"
-#include "error.h"
+#include "logs.h"
 
 void init_game_state(ClientState *state) {
 	state->key = KEY_DEFAULT;
@@ -20,12 +20,28 @@ void init_game_state(ClientState *state) {
 	state->pending_move = 0;
 	state->server_hex = NULL;
 
+	int lattice_center_x = (terminal_x/2-1)/2;
+	int lattice_center_y = (terminal_y / 2 + 2 * lattice_center_x - 2) / 4;
+
 	state->curr_pos = 	malloc(sizeof(Position));
 	state->old_pos 	= 	malloc(sizeof(Position));
 	state->anchor	=	malloc(sizeof(Position));
-	memset(state->curr_pos, 0, sizeof(Position));
-	memset(state->old_pos, 	0, sizeof(Position));
-	memset(state->anchor, 	0, sizeof(Position));
+
+	state->anchor->x = 0;
+	state->anchor->y = 0;
+
+	*state->old_pos = (Position) {
+		.x = lattice_center_x,
+		.y = lattice_center_y
+	};
+	
+	*state->curr_pos = (Position) {
+		.x = lattice_center_x,
+		.y = lattice_center_y
+	};	
+
+	state->curr_pos->x = lattice_center_x;
+
 	state->xHexList = NULL;
 	state->oHexList = NULL;
 }
@@ -48,9 +64,9 @@ int init_application(AppContext *ctx, int argc, char **argv){
 
 	while(!player_determined){
 		if (get_message(ctx->socket, packet) == 0) {
-			write_error("Packet: ");
-			write_error(packet);
-			write_error("\n");
+			log_message("Packet: ");
+			log_message(packet);
+			log_message("\n");
 			ctx->game.player = packet[0];
 			player_determined = 1;
 		}
@@ -97,8 +113,8 @@ void process_user_input(AppContext *ctx){
 		}
 		ctx->game.key = key;
 		char buffer[30];
-		snprintf(buffer, sizeof(buffer), "key: %c", buf[i]);
-		write_error(buffer);
+		snprintf(buffer, sizeof(buffer), "key: %c\n", buf[i]);
+		log_message(buffer);
 		break;
 	}
 	
@@ -114,7 +130,7 @@ int server_has_packet(AppContext *ctx){
 
 	int status = select(ctx->socket + 1, &read_fds, NULL, NULL, &time_val);
 	if (status == -1) {
-		write_error("select error");
+		log_message("select error");
 		return 0;
 	}
 	return status;
@@ -123,15 +139,15 @@ int server_has_packet(AppContext *ctx){
 // just gets the message packet from the socket.
 int fetch_server_packet(AppContext *ctx, char* packet){
 	if(get_message(ctx->socket, packet) != 0) {
-		write_error("Inbound: ");
-		write_error(packet);
-		write_error("\n");
+		log_message("Inbound: ");
+		log_message(packet);
+		log_message("\n");
 		ctx->status = STATUS_DISCONNECTED;
 		return 0;
 	} 
-	write_error("Inbound: ");
-	write_error(packet);
-	write_error("\n");
+	log_message("Inbound: ");
+	log_message(packet);
+	log_message("\n");
 	return 1;
 }
 
@@ -145,12 +161,20 @@ void process_server_packet(AppContext *ctx, char* packet){
 		return;
 	}
 
-	if (strcmp(packet, WIN) == 0) {
-		ctx->status = STATUS_WINNER;
-	} else if (strcmp(packet, LOSS) == 0) {
-		ctx->status = STATUS_LOSER;
+	if (strcmp(packet, X_WINS) == 0) {
+		if (ctx->game.player == X){
+			ctx->status = STATUS_WINNER;
+		} else {
+			ctx->status = STATUS_LOSER;
+		}
+	} else if (strcmp(packet, O_WINS) == 0) {
+		if (ctx->game.player == O){
+			ctx->status = STATUS_WINNER;
+		} else {
+			ctx->status = STATUS_LOSER;
+		}
 	} else {
-		write_error("Invalid packet\n");
+		log_message("Invalid packet\n");
 	}
 
 }
@@ -184,8 +208,9 @@ void send_move_request(AppContext *ctx) {
 
 	char *message = encode(&outbound_hex);
 	if (message != NULL) {
-		write_error("Outbound: ");
-		write_error(message);
+		log_message("Outbound: ");
+		log_message(message);
+		log_message("\n");
 		send_message(ctx->socket, message);
 		free(message);
 	}
@@ -195,6 +220,10 @@ void send_move_request(AppContext *ctx) {
 
 void render_frame(AppContext *ctx){
 	render(&(ctx->game));
+}
+
+void display_winner(AppContext *ctx) {
+	show_winner(&(ctx->game), (ctx->status == STATUS_WINNER));
 }
 
 void shutdown_application(AppContext *ctx) {

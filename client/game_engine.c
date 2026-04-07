@@ -3,7 +3,7 @@
 #include "game_engine.h"
 #include "game_const.h"
 #include "terminal.h"
-#include "error.h"
+#include "logs.h"
 
 void push_to(HexagonList **head, Hexagon *hex) {
     HexagonList *new_node = malloc(sizeof(HexagonList));
@@ -95,9 +95,11 @@ void load_coordinates(Position *origin, int direction, Position *dest){
 }
 
 void cleanup(ClientState *state){
-	free(state->server_hex->pos);
-	free(state->server_hex);
-
+	if(state->server_hex != NULL){
+		free(state->server_hex->pos);
+		free(state->server_hex);
+	}
+	
 	free(state->curr_pos);
 	free(state->old_pos);
 	free(state->anchor);

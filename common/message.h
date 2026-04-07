@@ -1,8 +1,6 @@
 #ifndef _MESSAGE_H_
 #define _MESSAGE_H_
 
-#define WIN ("WIN")
-#define LOSS ("LOSS")
 #define PACKET_SIZE 128
 
 extern const unsigned char PACKET_START;

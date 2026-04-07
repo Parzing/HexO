@@ -119,7 +119,11 @@ void render(ClientState *state) {
 	if (state->background_changed){
 		render_background();
 		// render current hexagon
-		SET_CURR_COLOR;
+		if(state->player == X){
+			X_COLOR;
+		} else {
+			O_COLOR;
+		}
 		render_hex(state, state->curr_pos);
 		render_center(state, get_hexagon(state, state->curr_pos));
 		state->background_changed = 0;
@@ -132,8 +136,23 @@ void render(ClientState *state) {
 		state->curr_pos->y != state->old_pos->y){
 		SET_LATTICE_COLOR;
 		render_hex(state, state->old_pos);
-		SET_CURR_COLOR;
+		if(state->player == X){
+			X_COLOR;
+		} else {
+			O_COLOR;
+		}
 		render_hex(state, state->curr_pos);
 	}
 	fflush(stdout);
+}
+
+void show_winner(ClientState *state, int is_winner) {
+	CLEAR_SCREEN;
+	CURSOR_TO(terminal_x/2, terminal_y/2);
+	if(is_winner) {
+		printf("You win as %c!", state->player);
+	} else {
+		printf("You lose as %c.", state->player);
+	}
+	CURSOR_TO(terminal_x-1, 0);
 }

@@ -10,6 +10,7 @@ Hexagon* get_hexagon(ClientState *state, Position *pos);
 int renderable(ClientState *state, Position *pos);
 void load_coordinates(Position *origin, int direction, Position *dest);
 
+
 void cleanup(ClientState *state);
 
 #endif

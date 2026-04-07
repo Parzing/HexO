@@ -49,6 +49,7 @@ void process_server_packet(AppContext *ctx, char* packet);
 void update_state(AppContext *ctx);
 void send_move_request(AppContext *ctx);
 void render_frame(AppContext *ctx);
+void display_winner(AppContext *ctx);
 void shutdown_application(AppContext *ctx);
 
 #endif
