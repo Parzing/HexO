@@ -17,6 +17,7 @@ int init_server_application(AppContext *ctx){
 	struct sockaddr_in *self = init_server_addr(DEFAULT_PORT);
 	ctx->socket = set_up_server_socket(self, 5);
 
+	clear_logs();
 	ctx->player_fds[0] = -1;
 	ctx->player_fds[1] = -1;
 	for (int i = 0; i < SPECTATOR_COUNT; i++) {
@@ -45,7 +46,7 @@ void wait_for_players(AppContext *ctx){
 	nw_wait_for_players(ctx);
 }
 
-// Note: Currently, updates all players with entire board state. This is fine, but a little weird.
+// Note: Currently, updates all new players with entire board state. This is fine, but a little weird.
 void update_new_players(AppContext *ctx){
 	HexagonList *xCurr = ctx->game.xHexList;
 	HexagonList *oCurr = ctx->game.oHexList;
@@ -104,8 +105,6 @@ void process_client_packets(AppContext *ctx){
 			return;
 		}
 	}
-
-
 }
 
 void update_server_state(AppContext *ctx){
@@ -134,8 +133,15 @@ void broadcast_updates(AppContext *ctx){
 	ctx->outbound_packet = 0;
 
 	char* buffer = encode(ctx->game.curr_move);
-	send_message(ctx->player_fds[0], buffer);
-	send_message(ctx->player_fds[1], buffer);
+	for(int i = 0; i < 2; i++) {
+		send_message(ctx->player_fds[i], buffer);
+	}
+
+	for(int i = 0; i < SPECTATOR_COUNT; i++){
+		if(ctx->spectator_fds[i] != -1) {
+		send_message(ctx->spectator_fds[i], buffer);
+		}
+	}
 
 	if (has_winner(&(ctx->game))) {
 		if(ctx->game.winner == X){

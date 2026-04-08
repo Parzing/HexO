@@ -55,6 +55,7 @@ int init_application(AppContext *ctx, int argc, char **argv){
 
 	configure_terminal();
 	configure_parameters();
+	clear_logs();
 	signal(SIGINT, signal_handler);
 	signal(SIGSEGV, signal_handler);
 

@@ -10,3 +10,8 @@ void log_message(char* message) {
 	fputs(message, f);
 	fclose(f);
 }
+
+void clear_logs(){
+	FILE* f = fopen(log_file, "w");
+	fclose(f);
+}

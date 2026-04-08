@@ -24,20 +24,25 @@ void cleanup(GameState* state) {
 	HexagonList *curr = state->oHexList;
 	while (curr != NULL) {
 		HexagonList *next = curr->next;
+		free(curr->hex->pos);
 		free(curr->hex);
 		free(curr);
 		curr = next;
 	}
-	state->oHexList 	= NULL;
+	
 
 	curr = state->xHexList;
 	while (curr != NULL) {
 		HexagonList *next = curr->next;
+		free(curr->hex->pos);
 		free(curr->hex);
 		free(curr);
 		curr = next;
 	}
-	state->oHexList 	= NULL;
+
+	free(state->curr_pos);
+	free(state->old_pos);
+	free(state->anchor);
 }
 
 int player_out_of_bounds(GameState *state) {
@@ -45,7 +50,7 @@ int player_out_of_bounds(GameState *state) {
 }
 
 void reset_player(GameState *state) {
-	state->curr_pos = state->anchor;
+	*state->curr_pos = *state->anchor;
 }
 
 int read_key(char* buf, int i) {
@@ -123,17 +128,9 @@ Hexagon* ensure_hexagon(GameState *state, Position* pos) {
 	return hex;
 }
 
-Hexagon* generate_hex(GameState *state, Hexagon *origin, int direction) {
-	Position pos;
-	load_coordinates(origin->pos, direction, &pos);
-	Hexagon *hex = ensure_hexagon(state, &pos);
-	return hex;
-}
-
 void save_winner(GameState *state) {
 	state->winner = state->player;
 }
-
 void update(GameState* state) {
 	*state->old_pos = *state->curr_pos;
 

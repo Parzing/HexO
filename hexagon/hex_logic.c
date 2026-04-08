@@ -100,7 +100,7 @@ void render_hex(GameState *state, Position* pos) {
 	for(int dx = -1; dx <= 1; dx++) {
 		for (int dy = -2; dy <= 2; dy++) {
 			if (cursor_center_x + dx < 0 || cursor_center_x + dx > terminal_x-1 ||
-				cursor_center_y + dy < 0 || cursor_center_y + dy > terminal_y){
+				cursor_center_y + dy < 0 || cursor_center_y + dy > terminal_y-1){
 				continue;
 			}
 			// we don't want to overwrite the shown value of this hexagon

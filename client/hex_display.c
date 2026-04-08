@@ -12,6 +12,16 @@ const char tiling [4][4] = {
 	{"  | "}
 };
 
+void set_color(char player) {
+	if(player == X){
+		X_COLOR;
+	} else if (player == O){
+		O_COLOR;
+	} else {
+		SET_CURR_COLOR;
+	}
+}
+
 void render_background() {
 	CURSOR_TO(0,0);
 	SET_LATTICE_COLOR;
@@ -119,11 +129,7 @@ void render(ClientState *state) {
 	if (state->background_changed){
 		render_background();
 		// render current hexagon
-		if(state->player == X){
-			X_COLOR;
-		} else {
-			O_COLOR;
-		}
+		set_color(state->player);
 		render_hex(state, state->curr_pos);
 		render_center(state, get_hexagon(state, state->curr_pos));
 		state->background_changed = 0;
@@ -136,11 +142,7 @@ void render(ClientState *state) {
 		state->curr_pos->y != state->old_pos->y){
 		SET_LATTICE_COLOR;
 		render_hex(state, state->old_pos);
-		if(state->player == X){
-			X_COLOR;
-		} else {
-			O_COLOR;
-		}
+		set_color(state->player);
 		render_hex(state, state->curr_pos);
 	}
 	fflush(stdout);
@@ -149,6 +151,7 @@ void render(ClientState *state) {
 void show_winner(ClientState *state, int is_winner) {
 	CLEAR_SCREEN;
 	CURSOR_TO(terminal_x/2, terminal_y/2-6);
+	set_color(state->player);
 	if(is_winner) {
 		printf("You win as %c!", state->player);
 	} else {

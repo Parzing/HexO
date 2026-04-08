@@ -8,23 +8,70 @@
 #include "socket.h"
 #include "message.h"
 
+void manage_spectators(AppContext *ctx, fd_set *fds) {
+	char buffer[PACKET_SIZE];
+	// accepting new spectators
+	if (FD_ISSET(ctx->socket, fds)) {
+		int slot = 0;
+		int new_fd = accept_connection(ctx->socket);
+		for (int i = 0; i < SPECTATOR_COUNT; i++) {
+			if (ctx->spectator_fds[i] == -1) {
+				ctx->spectator_fds[i] = new_fd;
+				buffer[0] = _;
+				buffer[1] = '\0';
+				send_message(new_fd, buffer);
+				slot = 1;
+				break;
+			}
+		}
+		if (slot){
+			printf("Spectator accepted from %d\n", new_fd);
+			update_spectators(ctx);
+		} else {
+			close(new_fd);
+			printf("Spectator rejected from %d\n", new_fd);
+		}
+	}
+	char buf;
+	// updaing spectator fd list if someone DC'd
+	for(int i = 0; i < SPECTATOR_COUNT; i++) {
+		if (ctx->spectator_fds[i] != -1 && FD_ISSET(ctx->spectator_fds[i], fds)) {
+			if (recv(ctx->spectator_fds[i], &buf, 1, 0) <= 0) {
+				printf("Spectator %d left.\n", ctx->spectator_fds[i]);
+				close(ctx->spectator_fds[i]);
+				ctx->spectator_fds[i] = -1;
+			}
+		}
+	}
+}
+
 void nw_manage_connections (AppContext *ctx) {
+	
 	fd_set fds;
 	struct timeval tv = {0,0}; // non blocking time value for select
 	FD_ZERO(&fds);
 	FD_SET(ctx->socket, &fds);
 	int max_fd = ctx->socket;
 
-
 	for(int i = 0; i < 2; i ++) {
 		if(ctx->player_fds[i] == -1) {
 			continue;
 		}
+		if (max_fd < ctx->player_fds[i]){
+			max_fd = ctx->player_fds[i];
+		}
 		FD_SET(ctx->player_fds[i], &fds);
 	}
 
-	max_fd = (max_fd > ctx->player_fds[0]) ? max_fd : ctx->player_fds[0];
-	max_fd = (max_fd > ctx->player_fds[1]) ? max_fd : ctx->player_fds[1];
+	for(int i = 0; i < SPECTATOR_COUNT; i++) {
+		if(ctx->spectator_fds[i] == -1) {
+			continue;
+		}
+		if (max_fd < ctx->spectator_fds[i]){
+			max_fd = ctx->spectator_fds[i];
+		}
+		FD_SET(ctx->spectator_fds[i], &fds);
+	}
 
 	if (select(max_fd+1, &fds, NULL, NULL, &tv) <= 0) {
 		// if any of the file descriptors aren't set, raise the server waiting flag
@@ -36,6 +83,8 @@ void nw_manage_connections (AppContext *ctx) {
 		}
 		return;
 	}
+
+	manage_spectators(ctx, &fds);
 
 	for(int i = 0; i < 2; i++) {
 		if(FD_ISSET(ctx->player_fds[i], &fds)) {
@@ -54,13 +103,8 @@ void nw_manage_connections (AppContext *ctx) {
 		ctx->outbound_packet = 0;
 		return;
 	}
-
-	// TODO: implement spec taters
-	if (FD_ISSET(ctx->socket, &fds)) {
-		int new_fd = accept_connection(ctx->socket);
-		close(new_fd);
-		printf("Connection rejected from %d\n", new_fd);
-	}
+	
+	
 }
 
 void clear_buffer(AppContext *ctx) {
@@ -153,8 +197,11 @@ void nw_wait_for_players(AppContext *ctx){
 void broadcast_message(AppContext *ctx, char *message) {
 	send_message(ctx->player_fds[0], message);
 	send_message(ctx->player_fds[1], message);
-	// TODO: broadcast to spectators
+	
+	// broadcast to spectators too
+	for(int i = 0; i < SPECTATOR_COUNT; i++) {
+		if (ctx->spectator_fds[i] != -1) {
+			send_message(ctx->spectator_fds[i], message);
+		}
+	}
 }
-
-
-
