@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 // default port.
-#define PORT 61674
+#define DEFAULT_PORT 61674
 
 // ANSI esc sequences
 #define CLEAR_SCREEN (printf("\e[2J"))

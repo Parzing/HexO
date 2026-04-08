@@ -11,10 +11,6 @@
 #include "terminal.h"
 #include "logs.h"
 
-#ifndef PORT
-	#define PORT 61674
-#endif
-
 #define FRAME_NS 16666667
 
 #define QUITTING ("quit")
@@ -36,6 +32,10 @@ void limit_frame_rate(struct timespec *start){
 }
 
 int main(int argc, char **argv) {
+	if (argc > 3) {
+		fprintf(stderr, "Usage: %s <ip> <port> \n", argv[0]);
+		exit(1);
+	}
 
 	AppContext ctx;
 	struct timespec frame_start;
@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
 	if(init_application(&ctx, argc, argv) != 0) {
 		return 1;
 	}
-	log_message("Initialization complete.\n");
+	log_message("Initialization complete.\n", CLIENT_LOG);
 	char buffer[50];
 	if(ctx.game.player != X && ctx.game.player != O) {
 		snprintf(buffer, sizeof(buffer), "Client is now spectator.\n");
@@ -52,8 +52,8 @@ int main(int argc, char **argv) {
 		snprintf(buffer, sizeof(buffer), "Client is now player %c.\n", ctx.game.player);
 	}
 	
-	log_message(buffer);
-	log_message("\n");
+	log_message(buffer, CLIENT_LOG);
+	log_message("\n", CLIENT_LOG);
 
 	while (ctx.status == STATUS_PLAYING) {
 		if(interrupt_received) {
@@ -82,7 +82,8 @@ int main(int argc, char **argv) {
 		limit_frame_rate(&frame_start);
 	}
 
-	display_winner(&ctx);
+	// renders final message, handles DC + winner + spectator win msg
+	display_conclusion(&ctx);
 
 	shutdown_application(&ctx);
 

@@ -100,7 +100,7 @@ void render_hex(ClientState *state, Position* pos) {
 	for(int dx = -1; dx <= 1; dx++) {
 		for (int dy = -2; dy <= 2; dy++) {
 			if (cursor_center_x + dx < 0 || cursor_center_x + dx > terminal_x-1 ||
-				cursor_center_y + dy < 0 || cursor_center_y + dy > terminal_y){
+				cursor_center_y + dy < 0 || cursor_center_y + dy > terminal_y-1){
 				continue;
 			}
 			// we don't want to overwrite the shown value of this hexagon
@@ -148,14 +148,19 @@ void render(ClientState *state) {
 	fflush(stdout);
 }
 
-void show_winner(ClientState *state, int is_winner) {
+void show_disconnect() {
+	CLEAR_SCREEN;
+	CURSOR_TO(terminal_x/2, terminal_y/2-11);
+	printf("Disconnected from server.");
+}
+
+void show_winner(ClientState *state, char winner) {
 	CLEAR_SCREEN;
 	CURSOR_TO(terminal_x/2, terminal_y/2-6);
 	set_color(state->player);
-	if (state->player != X && state->player != O) {
-		printf("      %c wins!", state->player);
-	}
-	else if(is_winner) {
+	if(state->player != X && state->player != O) {
+		printf("      %c wins!", winner);
+	} else if(state->player == winner) {
 		printf("You win as %c!", state->player);
 	} else {
 		printf("You lose as %c.", state->player);

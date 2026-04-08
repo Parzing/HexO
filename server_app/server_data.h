@@ -4,7 +4,6 @@
 #include "game_const.h"
 #include "message.h"
 
-#define DEFAULT_PORT 61674
 #define SPECTATOR_COUNT 1
 
 typedef struct {

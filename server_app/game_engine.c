@@ -113,9 +113,9 @@ void process_move(ServerState *state, Hexagon *hex){
 	if (hex->value != X && hex->value != O) {
 		char *buffer;
 		buffer = encode(hex);
-		log_message("Error processing hexagon: ");
-		log_message(buffer);
-		log_message("\n");
+		log_message("Error processing hexagon: ", SERVER_LOG);
+		log_message(buffer, SERVER_LOG);
+		log_message("\n", SERVER_LOG);
 		free(buffer);
 	}
 	state->num_moves++;

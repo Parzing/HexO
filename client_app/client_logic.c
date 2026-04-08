@@ -48,14 +48,15 @@ void init_game_state(ClientState *state) {
 
 int init_application(AppContext *ctx, int argc, char **argv){
 	char *host = (argc > 1) ? argv[1] : "127.0.0.1";
-	ctx->socket = connect_to_server(DEFAULT_PORT, host);
+	int port = (argc > 2) ? atoi(argv[2]) : DEFAULT_PORT;
+	ctx->socket = connect_to_server(port, host);
 	if(ctx->socket < 0) {
 		return -1;
 	} 
 
 	configure_terminal();
 	configure_parameters();
-	clear_logs();
+	clear_logs(CLIENT_LOG);
 	signal(SIGINT, signal_handler);
 	signal(SIGSEGV, signal_handler);
 
@@ -63,18 +64,18 @@ int init_application(AppContext *ctx, int argc, char **argv){
 
 	int status = get_message(ctx->socket, packet);
 	if(status != 0){
-		log_message("Malformed initialization packet\n");
+		log_message("Malformed initialization packet\n", CLIENT_LOG);
 		return -1;
 	}
 	if (strcmp(packet, SERVER_FULL) == 0) {
-		log_message("Server full\n");
+		log_message("Server full\n", CLIENT_LOG);
 		printf("Connection closed: Server full\n");
 		return -1;
 	}
 
-	log_message("Packet: ");
-	log_message(packet);
-	log_message("\n");
+	log_message("Packet: ", CLIENT_LOG);
+	log_message(packet, CLIENT_LOG);
+	log_message("\n", CLIENT_LOG);
 	ctx->game.player = packet[0];
 
 	init_game_state(&(ctx->game));
@@ -88,6 +89,9 @@ void handle_system_events(AppContext *ctx){
 		CLEAR_SCREEN;
 		ctx->game.background_changed = 1;
 		ctx->game.values_changed = 1;
+		if(!renderable(&(ctx->game), ctx->game.curr_pos)){
+			reset_cursor(&(ctx->game));
+		}
 	}
 }
 
@@ -118,7 +122,7 @@ void process_user_input(AppContext *ctx){
 		ctx->game.key = key;
 		char buffer[30];
 		snprintf(buffer, sizeof(buffer), "key: %c\n", buf[i]);
-		log_message(buffer);
+		log_message(buffer, CLIENT_LOG);
 		break;
 	}
 	
@@ -134,7 +138,7 @@ int server_has_packet(AppContext *ctx){
 
 	int status = select(ctx->socket + 1, &read_fds, NULL, NULL, &time_val);
 	if (status == -1) {
-		log_message("select error");
+		log_message("select error", CLIENT_LOG);
 		return 0;
 	}
 	return status;
@@ -143,15 +147,15 @@ int server_has_packet(AppContext *ctx){
 // just gets the message packet from the socket.
 int fetch_server_packet(AppContext *ctx, char* packet){
 	if(get_message(ctx->socket, packet) != 0) {
-		log_message("Disconnected with packet: ");
-		log_message(packet);
-		log_message("\n");
+		log_message("Disconnected with packet: ", CLIENT_LOG);
+		log_message(packet, CLIENT_LOG);
+		log_message("\n", CLIENT_LOG);
 		ctx->status = STATUS_DISCONNECTED;
 		return 0;
 	} 
-	log_message("Inbound: ");
-	log_message(packet);
-	log_message("\n");
+	log_message("Inbound: ", CLIENT_LOG);
+	log_message(packet, CLIENT_LOG);
+	log_message("\n", CLIENT_LOG);
 	return 1;
 }
 
@@ -166,19 +170,11 @@ void process_server_packet(AppContext *ctx, char* packet){
 	}
 
 	if (strcmp(packet, X_WINS) == 0) {
-		if (ctx->game.player == X){
-			ctx->status = STATUS_WINNER;
-		} else {
-			ctx->status = STATUS_LOSER;
-		}
+		ctx->status = STATUS_X_WINS;
 	} else if (strcmp(packet, O_WINS) == 0) {
-		if (ctx->game.player == O){
-			ctx->status = STATUS_WINNER;
-		} else {
-			ctx->status = STATUS_LOSER;
-		}
+		ctx->status = STATUS_O_WINS;
 	} else {
-		log_message("Invalid packet\n");
+		log_message("Invalid packet\n", CLIENT_LOG);
 	}
 
 }
@@ -187,6 +183,7 @@ void process_server_packet(AppContext *ctx, char* packet){
 // If the user has placed something, updates the AppContext to signal that
 // a request should be sent to the server
 void update_state(AppContext *ctx) {
+
 	if(ctx->game.server_hex != NULL) {
 		update_hex_lists(&(ctx->game), ctx->game.server_hex);
 		ctx->game.server_hex = NULL;
@@ -199,9 +196,8 @@ void update_state(AppContext *ctx) {
 	if (ctx->game.key == KEY_PLACE) {
 		ctx->game.pending_move = 1;
 		ctx->game.key = KEY_DEFAULT;
-	} else {
-		update_cursor(&(ctx->game));
 	}
+	update_cursor(&(ctx->game)); 
 	ctx->game.key = KEY_DEFAULT;
 }
 
@@ -212,9 +208,9 @@ void send_move_request(AppContext *ctx) {
 
 	char *message = encode(&outbound_hex);
 	if (message != NULL) {
-		log_message("Outbound: ");
-		log_message(message);
-		log_message("\n");
+		log_message("Outbound: ", CLIENT_LOG);
+		log_message(message, CLIENT_LOG);
+		log_message("\n", CLIENT_LOG);
 		send_message(ctx->socket, message);
 		free(message);
 	}
@@ -226,8 +222,17 @@ void render_frame(AppContext *ctx){
 	render(&(ctx->game));
 }
 
-void display_winner(AppContext *ctx) {
-	show_winner(&(ctx->game), (ctx->status == STATUS_WINNER));
+void display_conclusion(AppContext *ctx) {
+	if(ctx->status == STATUS_DISCONNECTED){
+		show_disconnect();
+	} else {
+		if(ctx->status == STATUS_X_WINS) {
+			show_winner(&(ctx->game), X);
+		} else {
+			show_winner(&(ctx->game), O);
+		}
+		
+	}
 }
 
 void shutdown_application(AppContext *ctx) {

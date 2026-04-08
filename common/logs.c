@@ -3,15 +3,13 @@
 
 #include "logs.h"
 
-const char log_file[] = "logs.txt";
-
-void log_message(char* message) {
-	FILE* f = fopen(log_file, "a");
+void log_message(char* message, char* path) {
+	FILE* f = fopen(path, "a");
 	fputs(message, f);
 	fclose(f);
 }
 
-void clear_logs(){
-	FILE* f = fopen(log_file, "w");
+void clear_logs(char *path){
+	FILE* f = fopen(path, "w");
 	fclose(f);
 }

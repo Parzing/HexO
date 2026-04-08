@@ -21,6 +21,11 @@ void update_hex_lists(ClientState *state, Hexagon *hex){
 	// TODO: handle invalid hex case?
 }
 
+void reset_cursor(ClientState *state){
+	state->curr_pos->x = state->anchor->x;
+	state->curr_pos->y = state->anchor->y;
+}
+
 void update_cursor(ClientState *state){
 	*(state->old_pos) = *(state->curr_pos);
 	// load coordinates into current position based on old hexagon & direction
@@ -61,10 +66,12 @@ int renderable(ClientState *state, Position *pos){
     int render_y = 4*rel_y - 2*rel_x + 2;
 
 	if (render_x < 0 || render_x > terminal_x-1) return 0;
-	if (render_y < 0 || render_y > terminal_y) return 0;
+	if (render_y < 0 || render_y > terminal_y-1) return 0;
 
 	return 1;
 }
+
+
 
 void load_coordinates(Position *origin, int direction, Position *dest){
 	dest->x = origin->x;

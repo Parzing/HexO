@@ -49,8 +49,7 @@ void display_hostname(int port) {
 int init_server_application(AppContext *ctx, int port){
 	struct sockaddr_in *self = init_server_addr(port);
 	ctx->socket = set_up_server_socket(self, 5);
-
-	clear_logs();
+	clear_logs(SERVER_LOG);
 	ctx->player_fds[0] = -1;
 	ctx->player_fds[1] = -1;
 	for (int i = 0; i < SPECTATOR_COUNT; i++) {
@@ -67,7 +66,7 @@ int init_server_application(AppContext *ctx, int port){
 	ctx->game.oHexList = NULL;
 	ctx->game.xHexList = NULL;
 	display_hostname(port);
-	log_message("Server initialized.\n");
+	log_message("Server initialized.\n", SERVER_LOG);
 
 	return 0;
 }
@@ -143,7 +142,7 @@ void process_client_packets(AppContext *ctx){
 	int status = select(max_fd + 1, &read_fds, NULL, NULL, &time_val);
 	
 	if (status == -1) {
-		log_message("select error");
+		log_message("select error", SERVER_LOG);
 		return;
 	}
 
@@ -153,7 +152,7 @@ void process_client_packets(AppContext *ctx){
 			if (status < 0) return;
 			char buffer[256];
 			snprintf(buffer, sizeof(buffer), "Packet: %s\n", ctx->move_packet);
-			log_message(buffer);
+			log_message(buffer, SERVER_LOG);
 			ctx->inbound_packet = 1;
 			return;
 		}
@@ -177,7 +176,7 @@ void update_server_state(AppContext *ctx){
 	}
 	char buffer[256];
 	snprintf(buffer, sizeof(buffer), "Move: %s\n", ctx->move_packet);
-	log_message(buffer);
+	log_message(buffer, SERVER_LOG);
 	printf("%s", buffer);
 
 	process_move(&(ctx->game), hex);
@@ -200,7 +199,7 @@ void broadcast_updates(AppContext *ctx){
 			buffer = O_WINS;
 		}
 		printf("%s\n", buffer);
-		log_message(buffer);
+		log_message(buffer, SERVER_LOG);
 		broadcast_message(ctx, buffer);
 		ctx->status = SERVER_SHUTDOWN;
 		return;

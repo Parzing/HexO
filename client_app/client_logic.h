@@ -1,8 +1,6 @@
 #ifndef CLIENT_LOGIC_H
 #define CLIENT_LOGIC_H
 
-#define DEFAULT_PORT 61674
-
 #include "game_const.h"
 
 // pending_move is a little awkward. I feel as though the AppContext should 
@@ -29,8 +27,8 @@ typedef struct {
 
 typedef enum {
     STATUS_PLAYING,
-    STATUS_WINNER,
-    STATUS_LOSER,
+    STATUS_X_WINS,
+    STATUS_O_WINS,
     STATUS_DISCONNECTED
 } GameStatus;
 
@@ -49,7 +47,7 @@ void process_server_packet(AppContext *ctx, char* packet);
 void update_state(AppContext *ctx);
 void send_move_request(AppContext *ctx);
 void render_frame(AppContext *ctx);
-void display_winner(AppContext *ctx);
+void display_conclusion(AppContext *ctx);
 void shutdown_application(AppContext *ctx);
 
 #endif
