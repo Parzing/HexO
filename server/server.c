@@ -6,10 +6,21 @@
 
 #include "server_logic.h"
 
-int main() {
+int main(int argc, char **argv) {
+	if(argc > 2) {
+		fprintf(stderr, "Usage: %s <port>\n", argv[0]);
+		exit(1);
+	}
+	int port;
+	if(argc == 2) {
+		port = atoi(argv[1]);
+	} else {
+		port = DEFAULT_PORT;
+	}
+
 	AppContext ctx;
 
-	if(init_server_application(&ctx) != 0) {
+	if(init_server_application(&ctx, port) != 0) {
 		return 1;
 	}
 

@@ -26,8 +26,9 @@ void manage_spectators(AppContext *ctx, fd_set *fds) {
 		}
 		if (slot){
 			printf("Spectator accepted from %d\n", new_fd);
-			update_spectators(ctx);
+			update_spectator(ctx, new_fd);
 		} else {
+			send_message(new_fd, SERVER_FULL);
 			close(new_fd);
 			printf("Spectator rejected from %d\n", new_fd);
 		}
@@ -190,18 +191,30 @@ void nw_wait_for_players(AppContext *ctx){
 			}
 		}
 	}
-
+	ctx->status = SERVER_ACTIVE;
 	clear_buffer(ctx);
 }
 
-void broadcast_message(AppContext *ctx, char *message) {
+// note: this a bit weird; it doesn't take in AppContext *ctx; it's just a wrapper for send_message
+// but i think other files should not send/recieve any messages directly, just use the network_handler
+void message_client(int fd, char *message) {
+	send_message(fd, message);
+}
+
+void message_players(AppContext *ctx, char *message) {
 	send_message(ctx->player_fds[0], message);
 	send_message(ctx->player_fds[1], message);
-	
-	// broadcast to spectators too
-	for(int i = 0; i < SPECTATOR_COUNT; i++) {
+}
+
+void message_spectators(AppContext *ctx, char *message) {
+		for(int i = 0; i < SPECTATOR_COUNT; i++) {
 		if (ctx->spectator_fds[i] != -1) {
 			send_message(ctx->spectator_fds[i], message);
 		}
 	}
+}
+
+void broadcast_message(AppContext *ctx, char *message) {
+	message_players(ctx, message);
+	message_spectators(ctx, message);
 }

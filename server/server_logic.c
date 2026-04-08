@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <ifaddrs.h>
 
 #include "socket.h"
 #include "logs.h"
@@ -12,9 +15,39 @@
 #include "server_data.h"
 #include "game_engine.h"
 
+// im ngl i kinda dont know what all this is i just looked it up
+void display_hostname(int port) {
+	struct ifaddrs *ifaddr, *curr;
+	char *ip;
 
-int init_server_application(AppContext *ctx){
-	struct sockaddr_in *self = init_server_addr(DEFAULT_PORT);
+	if(getifaddrs(&ifaddr) == -1) {
+		perror("getifaddrs");
+		return;
+	}
+
+	curr = ifaddr;
+
+	while(curr != NULL) {
+		if (curr->ifa_addr == NULL || curr->ifa_addr->sa_family != AF_INET) {
+			curr = curr->ifa_next;
+			continue;
+		}
+		// note: curr->ifa_addr is sockaddr, but casting is OK bc polymorphism
+		struct sockaddr_in *ip_addr = (struct sockaddr_in*) curr->ifa_addr; 
+		ip = inet_ntoa(ip_addr->sin_addr);
+
+		if(strcmp(ip, "127.0.0.1") != 0) {
+			printf("Server started with IP %s on port %d\n", ip, port);
+			break;
+		}
+		curr = curr->ifa_next;
+	}
+	
+	freeifaddrs(ifaddr);
+}
+
+int init_server_application(AppContext *ctx, int port){
+	struct sockaddr_in *self = init_server_addr(port);
 	ctx->socket = set_up_server_socket(self, 5);
 
 	clear_logs();
@@ -33,7 +66,9 @@ int init_server_application(AppContext *ctx){
 	ctx->game.num_moves = 1;	// x goes only once
 	ctx->game.oHexList = NULL;
 	ctx->game.xHexList = NULL;
-	log_message("Server initialized.");
+	display_hostname(port);
+	log_message("Server initialized.\n");
+
 	return 0;
 }
 
@@ -46,7 +81,7 @@ void wait_for_players(AppContext *ctx){
 	nw_wait_for_players(ctx);
 }
 
-// Note: Currently, updates all new players with entire board state. This is fine, but a little weird.
+// Note: Currently, updates all new players with entire board state.
 void update_new_players(AppContext *ctx){
 	HexagonList *xCurr = ctx->game.xHexList;
 	HexagonList *oCurr = ctx->game.oHexList;
@@ -70,6 +105,25 @@ void update_new_players(AppContext *ctx){
 
 	ctx->status = SERVER_ACTIVE;
 
+}
+
+void update_spectator(AppContext *ctx, int fd) {
+	HexagonList *xCurr = ctx->game.xHexList;
+	HexagonList *oCurr = ctx->game.oHexList;
+	char *buffer;
+
+	while(xCurr != NULL) {
+		buffer = encode(xCurr->hex);
+		message_client(fd, buffer);
+		free(buffer);
+		xCurr = xCurr->next;
+	}
+	while(oCurr != NULL) {
+		buffer = encode(oCurr->hex);
+		message_client(fd, buffer);
+		free(buffer);
+		oCurr = oCurr->next;
+	}
 }
 
 void process_client_packets(AppContext *ctx){
@@ -99,7 +153,6 @@ void process_client_packets(AppContext *ctx){
 			if (status < 0) return;
 			char buffer[256];
 			snprintf(buffer, sizeof(buffer), "Packet: %s\n", ctx->move_packet);
-			printf("%s", buffer);
 			log_message(buffer);
 			ctx->inbound_packet = 1;
 			return;
@@ -122,8 +175,12 @@ void update_server_state(AppContext *ctx){
 		free(hex);
 		return;
 	}
+	char buffer[256];
+	snprintf(buffer, sizeof(buffer), "Move: %s\n", ctx->move_packet);
+	log_message(buffer);
+	printf("%s", buffer);
+
 	process_move(&(ctx->game), hex);
-	
 }
 
 void broadcast_updates(AppContext *ctx){
@@ -133,15 +190,8 @@ void broadcast_updates(AppContext *ctx){
 	ctx->outbound_packet = 0;
 
 	char* buffer = encode(ctx->game.curr_move);
-	for(int i = 0; i < 2; i++) {
-		send_message(ctx->player_fds[i], buffer);
-	}
 
-	for(int i = 0; i < SPECTATOR_COUNT; i++){
-		if(ctx->spectator_fds[i] != -1) {
-		send_message(ctx->spectator_fds[i], buffer);
-		}
-	}
+	broadcast_message(ctx, buffer);
 
 	if (has_winner(&(ctx->game))) {
 		if(ctx->game.winner == X){
@@ -149,8 +199,9 @@ void broadcast_updates(AppContext *ctx){
 		} else {
 			buffer = O_WINS;
 		}
-		send_message(ctx->player_fds[0], buffer);
-		send_message(ctx->player_fds[1], buffer);
+		printf("%s\n", buffer);
+		log_message(buffer);
+		broadcast_message(ctx, buffer);
 		ctx->status = SERVER_SHUTDOWN;
 		return;
 	}

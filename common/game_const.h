@@ -44,8 +44,9 @@
 #define KEY_PLACE	7
 #define KEY_REMOVE	8
 
-#define X_WINS ("X_WIN")
-#define O_WINS ("O_WIN")
+#define SERVER_FULL ("FULL")
+#define X_WINS ("X wins!")
+#define O_WINS ("O wins!")
 
 #define X ('X')
 #define O ('O')

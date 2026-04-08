@@ -152,7 +152,10 @@ void show_winner(ClientState *state, int is_winner) {
 	CLEAR_SCREEN;
 	CURSOR_TO(terminal_x/2, terminal_y/2-6);
 	set_color(state->player);
-	if(is_winner) {
+	if (state->player != X && state->player != O) {
+		printf("      %c wins!", state->player);
+	}
+	else if(is_winner) {
 		printf("You win as %c!", state->player);
 	} else {
 		printf("You lose as %c.", state->player);

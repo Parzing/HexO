@@ -61,18 +61,21 @@ int init_application(AppContext *ctx, int argc, char **argv){
 
 	char packet[PACKET_SIZE];
 
-	int player_determined = 0;
-
-	while(!player_determined){
-		if (get_message(ctx->socket, packet) == 0) {
-			log_message("Packet: ");
-			log_message(packet);
-			log_message("\n");
-			ctx->game.player = packet[0];
-			player_determined = 1;
-		}
+	int status = get_message(ctx->socket, packet);
+	if(status != 0){
+		log_message("Malformed initialization packet\n");
+		return -1;
+	}
+	if (strcmp(packet, SERVER_FULL) == 0) {
+		log_message("Server full\n");
+		printf("Connection closed: Server full\n");
+		return -1;
 	}
 
+	log_message("Packet: ");
+	log_message(packet);
+	log_message("\n");
+	ctx->game.player = packet[0];
 
 	init_game_state(&(ctx->game));
 	ctx->status = STATUS_PLAYING;
@@ -140,7 +143,7 @@ int server_has_packet(AppContext *ctx){
 // just gets the message packet from the socket.
 int fetch_server_packet(AppContext *ctx, char* packet){
 	if(get_message(ctx->socket, packet) != 0) {
-		log_message("Inbound: ");
+		log_message("Disconnected with packet: ");
 		log_message(packet);
 		log_message("\n");
 		ctx->status = STATUS_DISCONNECTED;

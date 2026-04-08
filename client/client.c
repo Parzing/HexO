@@ -46,7 +46,12 @@ int main(int argc, char **argv) {
 	}
 	log_message("Initialization complete.\n");
 	char buffer[50];
-	snprintf(buffer, sizeof(buffer), "Client is now player %c\n", ctx.game.player);
+	if(ctx.game.player != X && ctx.game.player != O) {
+		snprintf(buffer, sizeof(buffer), "Client is now spectator.\n");
+	} else {
+		snprintf(buffer, sizeof(buffer), "Client is now player %c.\n", ctx.game.player);
+	}
+	
 	log_message(buffer);
 	log_message("\n");
 
