@@ -148,9 +148,10 @@ void render(ClientState *state) {
 	fflush(stdout);
 }
 
-void show_disconnect() {
+void show_disconnect(ClientState *state) {
 	CLEAR_SCREEN;
 	CURSOR_TO(terminal_x/2, terminal_y/2-11);
+	set_color(state->player);
 	printf("Disconnected from server.");
 }
 

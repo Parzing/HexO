@@ -106,7 +106,7 @@ void update_new_players(AppContext *ctx){
 
 }
 
-void update_spectator(AppContext *ctx, int fd) {
+void update_spectator(AppContext *ctx, int *fd) {
 	HexagonList *xCurr = ctx->game.xHexList;
 	HexagonList *oCurr = ctx->game.oHexList;
 	char *buffer;

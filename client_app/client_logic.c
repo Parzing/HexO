@@ -3,6 +3,7 @@
 
 #include "client_logic.h"
 #include "socket.h"
+#include "game_const.h"
 #include "game_engine.h"
 #include "terminal.h"
 #include "hex_display.h"
@@ -48,7 +49,7 @@ void init_game_state(ClientState *state) {
 
 int init_application(AppContext *ctx, int argc, char **argv){
 	char *host = (argc > 1) ? argv[1] : "127.0.0.1";
-	int port = (argc > 2) ? atoi(argv[2]) : DEFAULT_PORT;
+	int port = (argc > 2) ? atoi(argv[2]) : PORT;
 	ctx->socket = connect_to_server(port, host);
 	if(ctx->socket < 0) {
 		return -1;
@@ -201,6 +202,20 @@ void update_state(AppContext *ctx) {
 	ctx->game.key = KEY_DEFAULT;
 }
 
+// Attempts to send a message MAX_MESSAGE_ATTEMPTS times. If the message can't be sent,
+// sets the GameStatus flag to disconnected.
+void attempt_send_message(AppContext *ctx, char* message) {
+	int status;
+	for(int i = 0; i < MAX_MESSAGE_ATTEMPTS; i++) {
+		status = send_message(ctx->socket, message);
+		if (status == 0) {
+			return;
+		}
+	}
+	log_message("Unexpected error: message failed to send\n", CLIENT_LOG);
+	ctx->status = STATUS_DISCONNECTED;
+}
+
 void send_move_request(AppContext *ctx) {
 	Hexagon outbound_hex;
 	outbound_hex.value = ctx->game.player;
@@ -211,7 +226,7 @@ void send_move_request(AppContext *ctx) {
 		log_message("Outbound: ", CLIENT_LOG);
 		log_message(message, CLIENT_LOG);
 		log_message("\n", CLIENT_LOG);
-		send_message(ctx->socket, message);
+		attempt_send_message(ctx, message);
 		free(message);
 	}
 
@@ -224,7 +239,7 @@ void render_frame(AppContext *ctx){
 
 void display_conclusion(AppContext *ctx) {
 	if(ctx->status == STATUS_DISCONNECTED){
-		show_disconnect();
+		show_disconnect(&(ctx->game));
 	} else {
 		if(ctx->status == STATUS_X_WINS) {
 			show_winner(&(ctx->game), X);

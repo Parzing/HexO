@@ -7,6 +7,7 @@
 #include "server_data.h"
 #include "socket.h"
 #include "message.h"
+#include "logs.h"
 
 void manage_spectators(AppContext *ctx, fd_set *fds) {
 	char buffer[PACKET_SIZE];
@@ -19,17 +20,21 @@ void manage_spectators(AppContext *ctx, fd_set *fds) {
 				ctx->spectator_fds[i] = new_fd;
 				buffer[0] = _;
 				buffer[1] = '\0';
-				send_message(new_fd, buffer);
-				slot = 1;
+				message_client(&ctx->spectator_fds[i], buffer);
+				if (ctx->spectator_fds[i] != -1){
+					slot = i;
+				}
 				break;
 			}
 		}
-		if (slot){
+		if (slot != -1){
 			printf("Spectator accepted from %d\n", new_fd);
-			update_spectator(ctx, new_fd);
+			update_spectator(ctx, &ctx->spectator_fds[slot]);
 		} else {
-			send_message(new_fd, SERVER_FULL);
-			close(new_fd);
+			message_client(&new_fd, SERVER_FULL);
+			if (new_fd != -1){
+				close(new_fd);
+			}
 			printf("Spectator rejected from %d\n", new_fd);
 		}
 	}
@@ -158,14 +163,18 @@ void nw_wait_for_players(AppContext *ctx){
 				ctx->player_fds[0] = new_fd;
 				buffer[0] = X;
 				buffer[1] = '\0';
-				send_message(new_fd, buffer);
-				printf("Player 1 connected as X on fd %d\n", new_fd);
+				message_client(&ctx->player_fds[0], buffer);
+				if(ctx->player_fds[0] != -1){ // if message_client does not fail
+					printf("Player 1 connected as X on fd %d\n", new_fd);
+				}
 			} else if (ctx->player_fds[1] == -1) {
 				ctx->player_fds[1] = new_fd;
 				buffer[0] = O;
 				buffer[1] = '\0';
-				send_message(new_fd, buffer);
-				printf("Player 2 connected as O on fd %d\n", new_fd);
+				message_client(&ctx->player_fds[1], buffer);
+				if(ctx->player_fds[1] != -1){ // should pretty much always happen
+					printf("Player 2 connected as O on fd %d\n", new_fd);
+				}
 			}
 		}
 
@@ -195,21 +204,30 @@ void nw_wait_for_players(AppContext *ctx){
 	clear_buffer(ctx);
 }
 
-// note: this a bit weird; it doesn't take in AppContext *ctx; it's just a wrapper for send_message
-// but i think other files should not send/recieve any messages directly, just use the network_handler
-void message_client(int fd, char *message) {
-	send_message(fd, message);
+void message_client(int *fd, char *message) {
+	int status; 
+	for (int i = 0; i < MAX_MESSAGE_ATTEMPTS; i++) {
+		status = send_message(*fd, message);
+		if (status == 0){
+			return;
+		}
+	}
+	char buffer[PACKET_SIZE];
+	snprintf(buffer, sizeof(buffer), "Unexpected error: Failed to send message to client %d\n", *fd);
+	log_message(buffer, SERVER_LOG);
+	close(*fd);
+	*fd = -1;
 }
 
 void message_players(AppContext *ctx, char *message) {
-	send_message(ctx->player_fds[0], message);
-	send_message(ctx->player_fds[1], message);
+	message_client(&ctx->player_fds[0], message);
+	message_client(&ctx->player_fds[1], message);
 }
 
 void message_spectators(AppContext *ctx, char *message) {
 		for(int i = 0; i < SPECTATOR_COUNT; i++) {
 		if (ctx->spectator_fds[i] != -1) {
-			send_message(ctx->spectator_fds[i], message);
+			message_client(&ctx->spectator_fds[i], message);
 		}
 	}
 }

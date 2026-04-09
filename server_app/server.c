@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
 	if(argc == 2) {
 		port = atoi(argv[1]);
 	} else {
-		port = DEFAULT_PORT;
+		port = PORT;
 	}
 
 	AppContext ctx;

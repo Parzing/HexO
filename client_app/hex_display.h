@@ -6,6 +6,6 @@
 
 void render(ClientState *state);
 void show_winner(ClientState *state, char winner);
-void show_disconnect();
+void show_disconnect(ClientState *state);
 
 #endif

@@ -5,7 +5,9 @@
 #include <stdlib.h>
 
 // default port.
-#define DEFAULT_PORT 61674
+#ifndef PORT
+	#define PORT 61674
+#endif
 
 // ANSI esc sequences
 #define CLEAR_SCREEN (printf("\e[2J"))
@@ -44,6 +46,9 @@
 #define KEY_PLACE	7
 #define KEY_REMOVE	8
 
+#define MAX_MESSAGE_ATTEMPTS 5
+
+// server constants for telling the client to either bugger off or who wins
 #define SERVER_FULL ("FULL")
 #define X_WINS ("X wins!")
 #define O_WINS ("O wins!")
