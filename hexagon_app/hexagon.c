@@ -87,20 +87,31 @@ void render(GameState *state) {
 	if (background_changed){
 		render_background();
 		// render current hexagon
-		SET_CURR_COLOR;
+		switch (state->player) {
+			case X: X_COLOR; break;
+			case O: O_COLOR; break;
+		}
 		render_hex(state, state->curr_pos);
 		render_center(state, get_hexagon(state, state->curr_pos));
 		background_changed = 0;
 	}
 	if (values_changed){
 		fill_hexagons(state);
+		switch (state->player) {
+			case X: X_COLOR; break;
+			case O: O_COLOR; break;
+		}
+		render_hex(state, state->curr_pos);
 		values_changed = 0;
 	}
 	if (state->curr_pos->x != state->old_pos->x || 
 		state->curr_pos->y != state->old_pos->y){
 		SET_LATTICE_COLOR;
 		render_hex(state, state->old_pos);
-		SET_CURR_COLOR;
+		switch (state->player) {
+			case X: X_COLOR; break;
+			case O: O_COLOR; break;
+		}
 		render_hex(state, state->curr_pos);
 	}
 	fflush(stdout);
