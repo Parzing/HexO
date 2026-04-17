@@ -30,28 +30,29 @@
 #define SPACE (' ')
 #define ENTER ('\n')
 
-enum Key {
-	KEY_DEFAULT,
-	KEY_UP_L,
-	KEY_UP_R,
-	KEY_DOWN_L,
-	KEY_DOWN_R,
-	KEY_LEFT,
-	KEY_RIGHT,
-	KEY_PLACE,
-	KEY_REMOVE
-};
+typedef enum Action {
+	ACT_DEFAULT,
+	ACT_UP_L,
+	ACT_UP_R,
+	ACT_DOWN_L,
+	ACT_DOWN_R,
+	ACT_LEFT,
+	ACT_RIGHT,
+	ACT_PLACE,
+	ACT_REMOVE
+} Action;
 
 
 #define X ('X')
 #define O ('O')
 #define _ (' ')
 
-extern int terminal_x;
-extern int terminal_y;
+
 extern int exit_loop;
 extern int background_changed;
 extern int values_changed;
+
+
 
 
 typedef struct Position{
@@ -61,7 +62,7 @@ typedef struct Position{
 
 typedef struct Hexagon{
 	char value;
-	struct Position* pos;
+	struct Position pos;
 } Hexagon;
 
 typedef struct HexagonList {
@@ -69,22 +70,27 @@ typedef struct HexagonList {
 	struct HexagonList *next;
 } HexagonList;
 
-// x is <->
-// y is bottom left to top right
 typedef struct {
-	int key;
-	int moves_played;
-	char winner;
-	char player;
+	int values_changed;
+	int background_changed;
+
+	int terminal_x;
+	int terminal_y;
 
 	Position curr_pos;
 	Position old_pos;
 	Position anchor;
 
-	HexagonList *xHexList;
-	HexagonList *oHexList;
+} RenderState;
+
+typedef struct {
+	int moves_played;
+	char winner;
+	char player;
+
+	HexagonList *hexList;
 } GameState;
 
 
-typedef 
+
 #endif

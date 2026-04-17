@@ -2,6 +2,6 @@
 #define UPDATE_H
 #include "common.h"
 
-void update(GameState *state);
+void update(GameState *state, RenderState *render, Action action);
 
 #endif
