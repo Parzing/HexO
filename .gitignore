@@ -1,5 +1,3 @@
 *.o
-hexagon
-client
-server
 **/logs.txt
+/bin
