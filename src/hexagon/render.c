@@ -81,6 +81,7 @@ static void render_center(GameState *state, RenderState *render_state, Hexagon *
 
 
 static void render_background(RenderState *render_state) {
+	CLEAR_SCREEN();
 	CURSOR_TO(0,0);
 	SET_LATTICE_COLOR();
 
@@ -145,4 +146,29 @@ void render(GameState *state, RenderState *render_state) {
 		render_hex(render_state, render_state->curr_pos);
 	}
 	fflush(stdout);
+}
+
+void init_render_state(RenderState *render_state) {
+	configure_terminal();
+	configure_parameters(render_state);
+	signal(SIGINT, signal_handler);
+
+	int lattice_center_x = (render_state->terminal_x/2-1)/2;
+	int lattice_center_y = (render_state->terminal_y / 2 + 2 * lattice_center_x - 2) / 4;
+
+	render_state->background_changed = true;
+	render_state->values_changed = true;
+
+	render_state->anchor.x = 0;
+	render_state->anchor.y = 0;
+	
+	render_state->old_pos = (Position) {
+		.x = lattice_center_x,
+		.y = lattice_center_y
+	};
+	
+	render_state->curr_pos = (Position) {
+		.x = lattice_center_x,
+		.y = lattice_center_y
+	};
 }

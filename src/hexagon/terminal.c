@@ -15,7 +15,6 @@ volatile sig_atomic_t interrupt_received = 0;
 void configure_parameters(RenderState *render_state) {
 	//upon failure, default to old window size
 	if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &new_winsize) == -1){
-
 		return;
 	}
 
@@ -58,14 +57,16 @@ void configure_terminal() {
 }
 
 void reset_terminal() {
+	CLEAR_SCREEN();
 	ENABLE_WRAPPING();
 	RESET_COLOR();
 	SHOW_CURSOR();
+	CURSOR_TO(0,0);
 	fflush(stdout);
 	tcsetattr(STDIN_FILENO, TCSANOW, &old_termios);
 }
 
-void signal_handler(__attribute__((unused)) int signum) {
+void signal_handler(int signum) {
 	if (signum == SIGSEGV) {
 		reset_terminal();
 		fprintf(stderr, "Fatal: Segmentation Fault\n");

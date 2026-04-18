@@ -7,6 +7,7 @@
 #define DEFAULT_TERMINAL_X 20
 #define DEFAULT_TERMINAL_Y 16
 
+#define CLEAR_SCREEN() (printf("\e[2J"))
 #define HIDE_CURSOR() (printf("\e[?25l"))
 #define SHOW_CURSOR() (printf("\e[?25h"))
 #define CURSOR_TO(x, y) (printf("\e[%d;%dH", (x) + 1, (y) + 1))
@@ -23,10 +24,12 @@
 
 extern volatile sig_atomic_t interrupt_received;
 
+#include "render.h"
+
 int terminal_resized();
 void reset_terminal();
 void configure_terminal();
 void signal_handler(int signum);
-void configure_parameters();
+void configure_parameters(RenderState *render);
 
 #endif

@@ -10,4 +10,6 @@ typedef struct {
 	HexagonList *hexList;
 } GameState;
 
+void init_game(GameState *state);
+
 #endif

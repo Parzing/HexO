@@ -1,9 +1,15 @@
 #include <stddef.h>
 #include "game_state.h"
+#include "terminal.h"
 #include "render.h"
 #include "common.h"
 #include "action.h"
 
+
+/*
+	Returns coordinates of a position that you would get by moving in direction from origin.
+	If the action is not a direction, returns origin.
+*/
 Position load_coordinates (Position origin, Action direction) {
 	Position pos;
 	pos.x = origin.x;
@@ -29,6 +35,8 @@ Position load_coordinates (Position origin, Action direction) {
 			break;
 		case ACT_RIGHT:
 			pos.y++;
+			break;
+		default:
 			break;
 	}
 	return pos;
@@ -68,6 +76,19 @@ int detect_player_won(GameState* state, Position pos) {
 
 void update(GameState* state, RenderState *render, Action action) {
 	render->old_pos = render->curr_pos;
+	// load coordinates into current position based on old hexagon & direction.
+	render->curr_pos = load_coordinates(render->old_pos, action);
+		
+	if(!renderable(render, render->curr_pos)) {
+		render->anchor = load_coordinates(render->anchor, action);
+		render->values_changed = true;
+	}
+
+	if(terminal_resized()){
+		configure_parameters(render);
+		render->background_changed = true;
+		render->values_changed = true;
+	}
 
 	if(action == ACT_DEFAULT) {
 		return;
@@ -91,16 +112,11 @@ void update(GameState* state, RenderState *render, Action action) {
 			state->player = (state->player == X) ? O : X;
 		}
 		
-		render->values_changed = 1;
+		render->values_changed = true;
 		return;
 	}
 
-	// load coordinates into current position based on old hexagon & direction
-	render->curr_pos = load_coordinates(render->old_pos, action);
-		
-	if(!renderable(render, render->curr_pos)) {
-		render->anchor = load_coordinates(render->anchor, action);
-		render->values_changed = 1;
-		render->background_changed = 1;
-	}
+
+
+
 }

@@ -15,8 +15,6 @@ typedef struct {
 	bool values_changed;
 } RenderState;
 
-#define CLEAR_SCREEN() (printf("\e[2J"))
-
 /*
  * Return whether hexagon in the given position is on-screen
  */
@@ -27,5 +25,10 @@ bool renderable(RenderState *render_state, Position pos);
  * and terminal info from render_state.
  */
 void render(GameState *state, RenderState *render_state);
+
+/*
+ * Initializes the render state.
+ */
+void init_render_state(RenderState *render_state);
 
 #endif
