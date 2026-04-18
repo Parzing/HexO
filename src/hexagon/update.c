@@ -1,75 +1,46 @@
-int renderable(RenderState *render, Position pos) {
-	int rel_x = pos.x - render->curr_pos.x;
-    int rel_y = pos.y - render->curr_pos.y;
+#include <stddef.h>
+#include "game_state.h"
+#include "render.h"
+#include "common.h"
+#include "action.h"
 
-	int render_x = 2*rel_x + 1;
-    int render_y = 4*rel_y - 2*rel_x + 2;
-
-	if (render_x < 0 || render_x > render->terminal_x-1) return 0;
-	if (render_y < 0 || render_y > render->terminal_y) return 0;
-
-	return 1;
-}
-
-void load_coordinates(Position* origin, Action action, Position *pos){
-	pos->x = origin->x;
-	pos->y = origin->y;
+Position load_coordinates (Position origin, Action direction) {
+	Position pos;
+	pos.x = origin.x;
+	pos.y = origin.y;
 
 	switch (direction) {
 		case ACT_UP_L: 
-			pos->x--;
-			pos->y--;
+			pos.x--;
+			pos.y--;
 			break;
 		case ACT_UP_R: 
-			pos->x--;
+			pos.x--;
 			break;
 		case ACT_DOWN_L: 
-			pos->x++;
+			pos.x++;
 			break;
 		case ACT_DOWN_R:
-			pos->x++; 
-			pos->y++;
+			pos.x++; 
+			pos.y++;
 			break;
 		case ACT_LEFT:
-			pos->y--;
+			pos.y--;
 			break;
 		case ACT_RIGHT:
-			pos->y++;
+			pos.y++;
 			break;
 	}
+	return pos;
 }
 
-Hexagon* get_hexagon(GameState *state, Position pos) {
-	HexagonList *curr = state->hexList;
-	while(curr != NULL) {
-		if (curr->hex->pos.x == pos.x && curr->hex->pos.y == pos.y) {
-			break;
-		}
-		curr = curr->next;
-	}
-	return curr;
-}
-
-Hexagon* ensure_hexagon(GameState *state, Position pos) {
-	Hexagon *hex = get_hexagon(state, pos);
-	if (hex != NULL) {
-		return hex;
-	}
-
-	hex = malloc(sizeof(Hexagon));
-	hex->value = _;
-	hex->pos = pos;
-
-	return hex;
-}
-
-int count_dir(GameState *state, struct Hexagon *hex, Action action) {
+int count_dir(GameState *state, struct Hexagon *hex, Action direction) {
 	Hexagon *curr = hex;
 	Position new_pos;
 	int count = 0;
 	for(count = 0; count < 6; count++){
-		load_coordinates(curr->pos, direction, &new_pos);
-		curr = get_hexagon(state, &new_pos);
+		new_pos = load_coordinates(curr->pos, direction);
+		curr = get_hexagon(state->hexList, new_pos);
 		if (curr == NULL || curr->value != hex->value){
 			return count;
 		}
@@ -79,7 +50,7 @@ int count_dir(GameState *state, struct Hexagon *hex, Action action) {
 
 int detect_player_won(GameState* state, Position pos) {
 
-	Hexagon *hex = get_hexagon(state, pos);
+	Hexagon *hex = get_hexagon(state->hexList, pos);
 
 	if (count_dir(state, hex, ACT_UP_L) + count_dir(state, hex, ACT_DOWN_R) + 1 >= 6) {
 		return 1;
@@ -95,21 +66,14 @@ int detect_player_won(GameState* state, Position pos) {
 	return 0;
 }
 
-void push_to(HexagonList **head, Hexagon *hex) {
-    HexagonList *new_node = malloc(sizeof(HexagonList));
-    new_node->hex = hex;
-    new_node->next = *head;
-    *head = new_node;
-}
-
 void update(GameState* state, RenderState *render, Action action) {
-	state->old_pos = state->curr_pos;
+	render->old_pos = render->curr_pos;
 
 	if(action == ACT_DEFAULT) {
 		return;
 	}
 	if(action == ACT_PLACE) {
-		Hexagon* hex = ensure_hexagon(state, render->curr_pos);
+		Hexagon* hex = ensure_hexagon(state->hexList, render->curr_pos);
 		if(hex->value != _){
 			return;
 		}
@@ -117,7 +81,8 @@ void update(GameState* state, RenderState *render, Action action) {
 		push_to(&state->hexList, hex);
 
 		if (detect_player_won(state, render->curr_pos)){
-			state->winner = get_hexagon(state, render->curr_pos);
+			Hexagon *winner = get_hexagon(state->hexList, render->curr_pos);
+			state->winner = winner->value;
 		}
 
 		state->moves_played++;
@@ -131,10 +96,10 @@ void update(GameState* state, RenderState *render, Action action) {
 	}
 
 	// load coordinates into current position based on old hexagon & direction
-	load_coordinates(&render->old_pos, action, &render->curr_pos);
+	render->curr_pos = load_coordinates(render->old_pos, action);
 		
-	if(!renderable(render)) {
-		load_coordinates(state->anchor, state->key, state->anchor);
+	if(!renderable(render, render->curr_pos)) {
+		render->anchor = load_coordinates(render->anchor, action);
 		render->values_changed = 1;
 		render->background_changed = 1;
 	}

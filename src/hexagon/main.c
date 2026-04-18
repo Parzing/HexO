@@ -1,53 +1,66 @@
-void init_application(GameState *state) {
-	configure_terminal();
-	configure_parameters();
-	signal(SIGINT, signal_handler);
+#include <stdio.h>
+#include <time.h>
+#include <stdbool.h>
+#include "hexagon.h"
+#include "game_state.h"
+#include "action.h"
+#include "update.h"
+#include "render.h"
+#include "terminal.h"
 
+void init_game(GameState *state) {
 	struct timespec start = {};
 	struct timespec end = {};
 	struct timespec sleep = {};
 
-	CLEAR_SCREEN;
-	state->key = KEY_DEFAULT;
 	state->player = X;
 	state->moves_played = 1;
 
-	load_level(&state);
+	state->hexList = NULL;
 }
 
+void init_render_state(RenderState *render_state)
+{
+	configure_terminal();
+	configure_parameters(render_state);
+	signal(SIGINT, signal_handler);
 
-int main() {
+	render_state->terminal_x = DEFAULT_TERMINAL_X;
+	render_state->terminal_y = DEFAULT_TERMINAL_Y;
+	int lattice_center_x = (render_state->terminal_x/2-1)/2;
+	int lattice_center_y = (render_state->terminal_y / 2 + 2 * lattice_center_x - 2) / 4;
 
-	GameState state;
-	init_application(&state);
+	render_state->anchor.x = 0;
+	render_state->anchor.y = 0;
+	
+	render_state->old_pos = (Position) {
+		.x = lattice_center_x,
+		.y = lattice_center_y
+	};
+	
+	render_state->curr_pos = (Position) {
+		.x = lattice_center_x,
+		.y = lattice_center_y
+	};
 
-	while(!exit_loop) {
-		clock_gettime(CLOCK_MONOTONIC, &start);
-		
-		read_input(&state);
-		update(&state);
-		render(&state);
+	CLEAR_SCREEN();
+}
 
-		if (terminal_resized()) {
-			configure_parameters();
-			CLEAR_SCREEN;
-			background_changed = 1;
-			values_changed = 1;
-			if(player_out_of_bounds(&state)){
-				reset_player(&state);
-			}
-		}
-
-		clock_gettime(CLOCK_MONOTONIC, &end);
-
-		long elapsed_ns = (end.tv_sec - start.tv_sec) * 1000000000L + (end.tv_nsec - start.tv_nsec);
-		long remaining_ns = FRAME_NS - elapsed_ns;
-
-		if (remaining_ns > 0) {
-			sleep.tv_nsec = remaining_ns;
-			nanosleep(&sleep, NULL);
-    	}
+void play_game()
+{
+	GameState game_state;
+	RenderState render_state;
+	init_game(&game_state);
+	init_render_state(&render_state);
+	while (true) {
+		Action action = get_user_action();
+		update(&game_state, &render_state, action);
+		render(&game_state, &render_state);
 	}
+}
 
-	cleanup(&state);
+int main()
+{
+	play_game();
+	return 0;
 }
