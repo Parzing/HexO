@@ -26,6 +26,6 @@ $(OBJDIR):
 
 # Clean up
 clean:
-	rm -rf $(OBJDIR) $(TARGET)
+	rm -rf $(OBJDIR)/* $(TARGET)
 
 .PHONY: all clean

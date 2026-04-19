@@ -1,4 +1,8 @@
 *.o
+src/build
+src/hexo
+tests/build
+**/dependencies.txt
 **/logs.txt
 /bin
 hex

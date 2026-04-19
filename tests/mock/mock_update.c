@@ -1,11 +1,9 @@
 #include <stddef.h>
-
-#include "update.h"
-#include "game_state.h"
-#include "terminal.h"
-#include "render.h"
-#include "common.h"
-#include "action.h"
+#include "../src/game_state.h"
+#include "../src/terminal.h"
+#include "../src/render.h"
+#include "../src/common.h"
+#include "../src/action.h"
 
 
 /*
