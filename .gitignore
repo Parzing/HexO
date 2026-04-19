@@ -1,5 +1,8 @@
 *.o
+**/logs.txt
+/bin
+hex
 hexagon
 client
 server
-**/logs.txt
+
