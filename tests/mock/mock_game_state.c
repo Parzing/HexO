@@ -1,7 +1,7 @@
 #include <stddef.h>
 
-#include "../src/game_state.h"
-#include "../src/common.h"
+#include "game_state.h"
+#include "common.h"
 
 void init_game(GameState *state) {
 	state->moves_played = 1;

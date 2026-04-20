@@ -1,10 +1,10 @@
 #include <stdbool.h>
 #include <stdio.h>
-#include "../src/render.h"
-#include "../src/game_state.h"
-#include "../src/hexagon.h"
-#include "../src/common.h"
-#include "../src/terminal.h"
+#include "render.h"
+#include "game_state.h"
+#include "hexagon.h"
+#include "common.h"
+#include "terminal.h"
 
 const char tiling [4][4] = {
 	{".+'+"},

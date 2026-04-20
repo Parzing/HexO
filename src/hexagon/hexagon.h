@@ -24,7 +24,7 @@ typedef struct HexagonList {
 void push_to(HexagonList **head, Hexagon *hex);
 
 /*
- * Get the hexagon at the given position
+ * Get the hexagon at the given position; if one does not exist, returns NULL
  */
 Hexagon* get_hexagon(HexagonList *hex_list, Position pos);
 

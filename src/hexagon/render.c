@@ -148,6 +148,9 @@ void render(GameState *state, RenderState *render_state) {
 	fflush(stdout);
 }
 
+
+// Initializes the RenderState. The anchor is set to (0,0) and the curr_pos is
+// set to the center of the screen based on the size of the terminal.
 void init_render_state(RenderState *render_state) {
 	configure_terminal();
 	configure_parameters(render_state);

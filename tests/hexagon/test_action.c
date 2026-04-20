@@ -40,11 +40,29 @@ bool test_left(void) {
 	return action == ACT_LEFT;
 }
 
+bool test_up_r(void) {
+	int pipe_fds[2];
+	const char *input = "efe";
+	if(pipe(pipe_fds) == -1) {
+		perror("no pipe game\n");
+		return false;
+	}
+	write(pipe_fds[1], input, strlen(input));
+	dup2(pipe_fds[0], STDIN_FILENO);
+
+	close(pipe_fds[0]);
+	close(pipe_fds[1]);
+
+	Action action = get_user_action();
+	return action == ACT_UP_R;
+}
+
 
 int main(int argc, char** argv) {
 	TestCase tests[] = {
-		{test_right, "test_right", "Tests if the action transmitted by user input \"dfe\" is ACT_RIGHT"},
-		{test_left, "test_left", "Tests if the action transmitted by user input \"afe\" is ACT_LEFT"}
+		{test_right, "test_right", 	"Tests if the action transmitted by user input \"dfe\" is ACT_RIGHT"},
+		{test_left,  "test_left", 	"Tests if the action transmitted by user input \"afe\" is ACT_LEFT"},
+		{test_up_r,  "test_up_r", 	"Tests if the action transmitted by user input \"efe\" is ACT_UP_R"}
 	};
 
 	int test_num = sizeof(tests)/sizeof(TestCase);
