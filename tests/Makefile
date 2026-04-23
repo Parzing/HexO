@@ -17,8 +17,6 @@ HEX_NAMES := $(filter-out main, $(patsubst $(HEX_SRC_DIR)/%.c, %, $(wildcard $(H
 HEX_MOCK_SRCS := $(patsubst %, $(MOCK_DIR)/mock_%.c, $(HEX_NAMES))
 HEX_TARGETS := $(patsubst %, $(BUILD_DIR)/test_%, $(HEX_NAMES))
 
-
-
 all: $(HEX_TARGETS)
 
 # ensures build is an actual folder

@@ -1,122 +1,107 @@
 #include <stddef.h>
+#include <stdio.h>
+
 #include "game_state.h"
 #include "terminal.h"
 #include "render.h"
 #include "common.h"
 #include "action.h"
 
+#define KEY_UPL ('q')
+#define KEY_UPR ('e')
+#define KEY_DOWNL ('z')
+#define KEY_DOWNR ('c')
+#define KEY_LEFT ('a')
+#define KEY_RIGHT ('d')
+#define KEY_SPACE (' ')
+#define KEY_ENTER ('\n')
 
-/*
-	Returns coordinates of a position that you would get by moving in direction from origin.
-	If the action is not a direction, returns origin.
-*/
-Position load_coordinates (Position origin, Action direction) {
-	Position pos;
-	pos.x = origin.x;
-	pos.y = origin.y;
+typedef struct Position {
+	int x;
+	int y;
+} Position;
 
-	switch (direction) {
-		case ACT_UP_L: 
-			pos.x--;
-			pos.y--;
-			break;
-		case ACT_UP_R: 
-			pos.x--;
-			break;
-		case ACT_DOWN_L: 
-			pos.x++;
-			break;
-		case ACT_DOWN_R:
-			pos.x++; 
-			pos.y++;
-			break;
-		case ACT_LEFT:
-			pos.y--;
-			break;
-		case ACT_RIGHT:
-			pos.y++;
-			break;
-		default:
-			break;
-	}
-	return pos;
-}
+typedef struct Hexagon {
+	char value;
+	struct Position pos;
+} Hexagon;
 
-int count_dir(GameState *state, struct Hexagon *hex, Action direction) {
-	Hexagon *curr = hex;
-	Position new_pos;
-	int count = 0;
-	for(count = 0; count < 6; count++){
-		new_pos = load_coordinates(curr->pos, direction);
-		curr = get_hexagon(state->hexList, new_pos);
-		if (curr == NULL || curr->value != hex->value){
-			return count;
-		}
-	}
-	return count;
-}
+typedef struct HexagonList {
+	struct Hexagon *hex;
+	struct HexagonList *next;
+} HexagonList;
 
-int detect_player_won(GameState* state, Position pos) {
+typedef enum {
+	ACT_DEFAULT,
+	ACT_UP_L,
+	ACT_UP_R,
+	ACT_DOWN_L,
+	ACT_DOWN_R,
+	ACT_LEFT,
+	ACT_RIGHT,
+	ACT_PLACE,
+	ACT_REMOVE
+} Action;
 
-	Hexagon *hex = get_hexagon(state->hexList, pos);
+typedef struct {
+	Position curr_pos;
+	Position old_pos;
+	Position anchor;
+	int terminal_x;
+	int terminal_y;
+	bool background_changed;
+	bool values_changed;
+} RenderState;
 
-	if (count_dir(state, hex, ACT_UP_L) + count_dir(state, hex, ACT_DOWN_R) + 1 >= 6) {
-		return 1;
-	}
-
-	if (count_dir(state, hex, ACT_UP_R) + count_dir(state, hex, ACT_DOWN_L) + 1 >= 6) {
-		return 1;
-	}
-
-		if (count_dir(state, hex, ACT_LEFT) + count_dir(state, hex, ACT_RIGHT) + 1 >= 6) {
-		return 1;
-	}
-	return 0;
-}
 
 void update(GameState* state, RenderState *render, Action action) {
-	render->old_pos = render->curr_pos;
-	// load coordinates into current position based on old hexagon & direction.
-	render->curr_pos = load_coordinates(render->old_pos, action);
-		
-	if(!renderable(render, render->curr_pos)) {
-		render->anchor = load_coordinates(render->anchor, action);
-		render->values_changed = true;
+	printf("Game state: "
+			"	Moves played:	%d\n"
+			"	Player:			%c\n"
+			"	Winner:			%c\n",
+			state->moves_played, state->player, state->winner);
+	if(state != NULL) {
+		printf(
+			"	HexList[0]: 	(%c, %d, %d)\n\n", 
+			state->hexList->hex->value, state->hexList->hex->pos.x, state->hexList->hex->pos.y);
+	} else {
+		printf("	HexList[0]:		NULL");
 	}
-
-	if(terminal_resized()){
-		configure_parameters(render);
-		render->background_changed = true;
-		render->values_changed = true;
-	}
-
-	if(action == ACT_DEFAULT) {
-		return;
-	}
-	if(action == ACT_PLACE) {
-		Hexagon* hex = ensure_hexagon(state->hexList, render->curr_pos);
-		if(hex->value != _){
-			return;
-		}
-		hex->value = state->player;
-		push_to(&state->hexList, hex);
-
-		if (detect_player_won(state, render->curr_pos)){
-			Hexagon *winner = get_hexagon(state->hexList, render->curr_pos);
-			state->winner = winner->value;
-		}
-
-		state->moves_played++;
-		if(state->moves_played >= 2) {
-			state->moves_played = 0;
-			state->player = (state->player == X) ? O : X;
-		}
-		
-		render->values_changed = true;
-		return;
+	
+	if(render != NULL) {
+		printf(
+			"RenderState:\n"
+			"	curr_pos:		(%d, %d)\n"
+			"	old_pos:		(%d, %d)\n"
+			"	anchor:			(%d, %d)\n"
+			"	terminal:		(%d, %d)\n"
+			"	bg_changed:		%d\n"
+			"	values_changed:	%d\n\n",
+			render->curr_pos.x, render->curr_pos.y,
+			render->old_pos.x, render->old_pos.y,
+			render->anchor.x, render->anchor.y,
+			render->terminal_x, render->terminal_y,
+			render->background_changed,
+			render->values_changed
+		);
+	} else {
+		printf("RenderState: NULL\n\n");
 	}
 
 
+	char *action_str = "";
 
+	switch(action) {
+		case ACT_DEFAULT:	action_str = "ACT_DEFAULT"; break;
+		case ACT_UP_L:		action_str = "ACT_UP_L"; break;
+		case ACT_UP_R:		action_str = "ACT_UP_R"; break;
+		case ACT_DOWN_L:	action_str = "ACT_DOWN_L"; break;
+		case ACT_DOWN_R:	action_str = "ACT_DOWN_R"; break;
+		case ACT_LEFT:		action_str = "ACT_LEFT"; break;
+		case ACT_RIGHT:		action_str = "ACT_RIGHT"; break;
+		case ACT_PLACE:		action_str = "ACT_PLACE"; break;
+		case ACT_REMOVE:	action_str = "ACT_REMOVE"; break;
+	}
 
+	printf("Action:				%s", action_str);
 }
